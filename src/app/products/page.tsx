@@ -321,14 +321,15 @@ function ProductsContent() {
                                                             </span>
                                                         )}
                                                         <span className={`text-xl font-bold ${product.outOfStock ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
-                                                            {product.variants?.length > 0
-                                                                ? product.variants.reduce((min, v) => v.price < min.price ? v : min, product.variants[0]).price
-                                                                : product.discount > 0
-                                                                    ? (product.basePrice - product.discount).toFixed(0)
-                                                                    : product.basePrice} {currencySymbol}
+                                                            {product.discount > 0
+                                                                ? (product.basePrice - product.discount).toFixed(0)
+                                                                : product.basePrice} {currencySymbol}
                                                         </span>
                                                         {product.durationLabel && (
                                                             <span className="text-sm text-gray-400 ms-1">/{product.durationLabel}</span>
+                                                        )}
+                                                        {product.variants?.length > 1 && (
+                                                            <span className="text-xs text-violet-500 ms-2">({product.variants.length} plans)</span>
                                                         )}
                                                     </div>
 

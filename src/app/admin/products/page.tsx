@@ -334,20 +334,43 @@ export default function AdminProductsPage() {
     };
 
     const handleMoveOrder = async (product: ProductData, direction: 'up' | 'down') => {
-        const newOrder = direction === 'up' 
-            ? Math.max(0, (product.displayOrder || 0) - 1) 
-            : (product.displayOrder || 0) + 1;
-        setProducts(prev => prev.map(p => p.id === product.id ? { ...p, displayOrder: newOrder } : p));
-        try {
-            await fetch(`/api/products/${product.id}`, {
+        // Sort products by current displayOrder
+        const sorted = [...products].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+        const idx = sorted.findIndex(p => p.id === product.id);
+        const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+        
+        if (swapIdx < 0 || swapIdx >= sorted.length) return; // Can't move further
+        
+        const neighbor = sorted[swapIdx];
+        const myOrder = product.displayOrder || 0;
+        const neighborOrder = neighbor.displayOrder || 0;
+        
+        // Swap orders - if same, assign sequential values
+        const newMyOrder = neighborOrder;
+        const newNeighborOrder = myOrder === neighborOrder 
+            ? (direction === 'up' ? myOrder + 1 : myOrder - 1)
+            : myOrder;
+        
+        // Optimistic update
+        setProducts(prev => prev.map(p => {
+            if (p.id === product.id) return { ...p, displayOrder: newMyOrder };
+            if (p.id === neighbor.id) return { ...p, displayOrder: newNeighborOrder };
+            return p;
+        }));
+        
+        // Fire and forget - don't block UI
+        Promise.all([
+            fetch(`/api/products/${product.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ displayOrder: newOrder }),
-            });
-            fetchData();
-        } catch {
-            setProducts(prev => prev.map(p => p.id === product.id ? { ...p, displayOrder: product.displayOrder } : p));
-        }
+                body: JSON.stringify({ displayOrder: newMyOrder }),
+            }),
+            fetch(`/api/products/${neighbor.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ displayOrder: newNeighborOrder }),
+            }),
+        ]).catch(() => fetchData()); // Only refetch on error
     };
 
     const isUnavailable = (product: ProductData) => {

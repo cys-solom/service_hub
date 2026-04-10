@@ -216,8 +216,8 @@ export default function HomePage() {
                         <div>
                           <span className="text-sm text-gray-400">{t.featured.from}</span>
                           <p className={`text-2xl font-bold ${product.outOfStock ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
-                            {product.variants?.length > 0
-                              ? product.variants.reduce((min, v) => v.price < min.price ? v : min, product.variants[0]).price
+                            {product.discount > 0
+                              ? (product.basePrice - product.discount).toFixed(0)
                               : product.basePrice} {currencySymbol}
                             {product.durationLabel && (
                               <span className="text-sm font-normal text-gray-400">/{product.durationLabel}</span>
