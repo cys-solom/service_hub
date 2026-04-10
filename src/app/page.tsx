@@ -17,6 +17,7 @@ import {
   Package,
   CreditCard,
   Send,
+  Ban,
 } from 'lucide-react';
 import { Product, Category } from '@/lib/types';
 import { useI18n } from '@/lib/i18n';
@@ -171,8 +172,21 @@ export default function HomePage() {
               ? featured.map((product) => (
                 <motion.div key={product.id} variants={fadeInUp}>
                   <Link href={`/product/${product.slug}`}>
-                    <div className="group rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 p-6 card-hover h-full">
-                      <div className="flex items-center gap-4 mb-4">
+                    <div className={`group rounded-2xl border ${product.outOfStock ? 'border-red-200/50 dark:border-red-800/30' : 'border-gray-200 dark:border-gray-800'} bg-white dark:bg-gray-900/50 p-6 card-hover h-full relative overflow-hidden`}>
+                      {/* Out of Stock Overlay */}
+                      {product.outOfStock && (
+                        <div className="absolute inset-0 bg-gray-900/5 dark:bg-black/20 z-10 pointer-events-none" />
+                      )}
+
+                      {/* Out of Stock Badge */}
+                      {product.outOfStock && (
+                        <div className="absolute top-3 end-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/90 dark:bg-red-600/90 text-white text-[11px] font-bold shadow-lg shadow-red-500/20 backdrop-blur-sm">
+                          <Ban className="w-3 h-3" />
+                          <span>غير متاح حالياً</span>
+                        </div>
+                      )}
+
+                      <div className={`flex items-center gap-4 mb-4 ${product.outOfStock ? 'opacity-60' : ''}`}>
                         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center overflow-hidden">
                           {product.images?.[0] ? (
                             <img
@@ -185,7 +199,7 @@ export default function HomePage() {
                           )}
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+                          <h3 className={`font-semibold ${product.outOfStock ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400'} transition-colors`}>
                             {product.name}
                           </h3>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -194,14 +208,14 @@ export default function HomePage() {
                         </div>
                       </div>
 
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">
+                      <p className={`text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2 ${product.outOfStock ? 'opacity-60' : ''}`}>
                         {product.description}
                       </p>
 
-                      <div className="flex items-end justify-between">
+                      <div className={`flex items-end justify-between ${product.outOfStock ? 'opacity-60' : ''}`}>
                         <div>
                           <span className="text-sm text-gray-400">{t.featured.from}</span>
-                          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                          <p className={`text-2xl font-bold ${product.outOfStock ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
                             {product.variants?.length > 0
                               ? product.variants.reduce((min, v) => v.price < min.price ? v : min, product.variants[0]).price
                               : product.basePrice} {currencySymbol}

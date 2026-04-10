@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '@/lib/cart-context';
 import { Product, ProductVariant, Settings } from '@/lib/types';
-import { buildWhatsAppMessage, generateWhatsAppUrl, generateOrderCode } from '@/lib/whatsapp';
+import { buildWhatsAppMessage, generateWhatsAppUrl, generateOrderCode, openWhatsApp } from '@/lib/whatsapp';
 import { useI18n } from '@/lib/i18n';
 import { useSettings } from '@/lib/settings-context';
 
@@ -128,8 +128,8 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
         });
 
         const url = generateWhatsAppUrl(settings.whatsappPhone, message);
-        window.open(url, '_blank');
-        router.push(`/thank-you?code=${orderCode}`);
+        openWhatsApp(url);
+        setTimeout(() => router.push(`/thank-you?code=${orderCode}`), 500);
     };
 
     if (loading) {

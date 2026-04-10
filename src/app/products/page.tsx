@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Search, Filter, SlidersHorizontal, Package, Star, X } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, Package, Star, X, Ban } from 'lucide-react';
 import { Product, Category } from '@/lib/types';
 import { useI18n } from '@/lib/i18n';
 import { useSettings } from '@/lib/settings-context';
@@ -270,8 +270,21 @@ function ProductsContent() {
                                         }}
                                     >
                                         <Link href={`/product/${product.slug}`}>
-                                            <div className="group rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 p-6 card-hover h-full flex flex-col">
-                                                <div className="flex items-center gap-4 mb-4">
+                                            <div className={`group rounded-2xl border ${product.outOfStock ? 'border-red-200/50 dark:border-red-800/30' : 'border-gray-200 dark:border-gray-800'} bg-white dark:bg-gray-900/50 p-6 card-hover h-full flex flex-col relative overflow-hidden`}>
+                                                {/* Out of Stock Overlay */}
+                                                {product.outOfStock && (
+                                                    <div className="absolute inset-0 bg-gray-900/5 dark:bg-black/20 z-10 pointer-events-none" />
+                                                )}
+
+                                                {/* Out of Stock Badge */}
+                                                {product.outOfStock && (
+                                                    <div className="absolute top-3 end-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/90 dark:bg-red-600/90 text-white text-[11px] font-bold shadow-lg shadow-red-500/20 backdrop-blur-sm">
+                                                        <Ban className="w-3 h-3" />
+                                                        <span>غير متاح حالياً</span>
+                                                    </div>
+                                                )}
+
+                                                <div className={`flex items-center gap-4 mb-4 ${product.outOfStock ? 'opacity-60' : ''}`}>
                                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center overflow-hidden shrink-0">
                                                         {product.images?.[0] ? (
                                                             <img
@@ -284,7 +297,7 @@ function ProductsContent() {
                                                         )}
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors truncate">
+                                                        <h3 className={`font-semibold ${product.outOfStock ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400'} transition-colors truncate`}>
                                                             {product.name}
                                                         </h3>
                                                         <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -293,18 +306,18 @@ function ProductsContent() {
                                                     </div>
                                                 </div>
 
-                                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2 flex-1">
+                                                <p className={`text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2 flex-1 ${product.outOfStock ? 'opacity-60' : ''}`}>
                                                     {product.description}
                                                 </p>
 
-                                                <div className="flex items-end justify-between mt-auto">
+                                                <div className={`flex items-end justify-between mt-auto ${product.outOfStock ? 'opacity-60' : ''}`}>
                                                     <div>
                                                         {product.discount > 0 && (
                                                             <span className="text-xs text-red-500 font-medium line-through me-2">
                                                                 {product.basePrice} {currencySymbol}
                                                             </span>
                                                         )}
-                                                        <span className="text-xl font-bold text-gray-900 dark:text-white">
+                                                        <span className={`text-xl font-bold ${product.outOfStock ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
                                                             {product.variants?.length > 0
                                                                 ? product.variants.reduce((min, v) => v.price < min.price ? v : min, product.variants[0]).price
                                                                 : product.discount > 0

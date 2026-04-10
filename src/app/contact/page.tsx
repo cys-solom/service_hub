@@ -6,6 +6,8 @@ import { MessageCircle, Mail, Phone } from 'lucide-react';
 import { Settings } from '@/lib/types';
 import { useI18n } from '@/lib/i18n';
 
+import { openWhatsApp } from '@/lib/whatsapp';
+
 export default function ContactPage() {
     const [settings, setSettings] = useState<Settings | null>(null);
     const { t } = useI18n();
@@ -19,8 +21,9 @@ export default function ContactPage() {
 
     const handleWhatsApp = () => {
         if (!settings?.whatsappPhone) return;
-        const url = `https://wa.me/${settings.whatsappPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(t.contact.whatsappGreeting)}`;
-        window.open(url, '_blank');
+        const cleanPhone = settings.whatsappPhone.replace(/[^0-9]/g, '');
+        const url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(t.contact.whatsappGreeting)}`;
+        openWhatsApp(url);
     };
 
     return (

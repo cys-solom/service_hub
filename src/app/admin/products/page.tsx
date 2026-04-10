@@ -16,6 +16,8 @@ import {
     AlertTriangle,
     Ban,
     Star,
+    Image as ImageIcon,
+    Link,
 } from 'lucide-react';
 import { useSettings } from '@/lib/settings-context';
 
@@ -120,7 +122,7 @@ export default function AdminProductsPage() {
             features: formData.features.split('\n').filter(Boolean),
             basePrice: formData.basePrice,
             discount: formData.discount,
-            images: formData.images.split('\n').filter(Boolean),
+            images: formData.images.trim() ? [formData.images.trim()] : [],
             categoryId: formData.categoryId,
             isActive: formData.isActive,
             durationLabel: formData.durationLabel,
@@ -156,7 +158,7 @@ export default function AdminProductsPage() {
             features: (product.features || []).join('\n'),
             basePrice: String(product.basePrice),
             discount: String(product.discount),
-            images: (product.images || []).join('\n'),
+            images: (product.images || [])[0] || '',
             categoryId: product.categoryId,
             isActive: product.isActive,
             unavailableUntil: product.unavailableUntil ? new Date(product.unavailableUntil).toISOString().slice(0, 16) : '',
@@ -524,14 +526,44 @@ export default function AdminProductsPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Image URLs (one per line)</label>
-                                <textarea
-                                    value={formData.images}
-                                    onChange={(e) => setFormData({ ...formData, images: e.target.value })}
-                                    rows={2}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm resize-none"
-                                    placeholder="https://example.com/image.png"
-                                />
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                                    <ImageIcon className="w-4 h-4" />
+                                    Product Image
+                                </label>
+                                <div className="flex gap-3">
+                                    {/* Image Preview */}
+                                    <div className="w-20 h-20 shrink-0 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center overflow-hidden">
+                                        {formData.images && formData.images.trim() ? (
+                                            <img
+                                                src={formData.images.split('\n')[0]}
+                                                alt="Preview"
+                                                className="w-full h-full object-contain p-1"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                    (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                                }}
+                                            />
+                                        ) : (
+                                            <Package className="w-8 h-8 text-gray-300 dark:text-gray-600" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="relative">
+                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                <Link className="w-4 h-4 text-gray-400" />
+                                            </div>
+                                            <input
+                                                value={formData.images}
+                                                onChange={(e) => setFormData({ ...formData, images: e.target.value })}
+                                                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                                                placeholder="https://example.com/logo.png or /logos/name.svg"
+                                            />
+                                        </div>
+                                        <p className="text-xs text-gray-400 mt-1.5 leading-relaxed">
+                                            💡 Add image link (URL) — e.g. <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded text-violet-500">/logos/chatgpt.svg</code> for local logos, or paste any external image URL
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Unavailable Until */}

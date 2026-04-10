@@ -111,5 +111,30 @@ export function buildWhatsAppMessage(data: WhatsAppOrderData): string {
 export function generateWhatsAppUrl(phone: string, message: string): string {
     const cleanPhone = phone.replace(/[^0-9]/g, '');
     const encodedMessage = encodeURIComponent(message);
-    return `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+    // Use api.whatsapp.com for better mobile compatibility
+    return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodedMessage}`;
+}
+
+/**
+ * Opens WhatsApp URL reliably on both desktop and mobile.
+ * window.open with '_blank' gets blocked by mobile popup blockers.
+ * Using window.location.href works reliably as a fallback.
+ */
+export function openWhatsApp(url: string): void {
+    // Try to detect mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+    );
+
+    if (isMobile) {
+        // On mobile, direct navigation works better and avoids popup blockers
+        window.location.href = url;
+    } else {
+        // On desktop, open in new tab
+        const newWindow = window.open(url, '_blank');
+        if (!newWindow || newWindow.closed) {
+            // Fallback if popup was blocked
+            window.location.href = url;
+        }
+    }
 }
