@@ -39,7 +39,7 @@ export async function PUT(
 
         const { id } = await params;
         const body = await request.json();
-        const { name, slug, description, features, basePrice, discount, images, categoryId, isActive, unavailableUntil } = body;
+        const { name, slug, description, features, basePrice, discount, images, categoryId, isActive, unavailableUntil, displayOrder } = body;
 
         const data: Record<string, unknown> = {};
         if (name !== undefined) data.name = name;
@@ -54,6 +54,7 @@ export async function PUT(
         if (body.outOfStock !== undefined) data.outOfStock = body.outOfStock;
         if (body.isFeatured !== undefined) data.isFeatured = body.isFeatured;
         if (body.durationLabel !== undefined) data.durationLabel = body.durationLabel;
+        if (displayOrder !== undefined) data.displayOrder = parseInt(String(displayOrder)) || 0;
         if (unavailableUntil !== undefined) {
             data.unavailableUntil = unavailableUntil ? new Date(unavailableUntil) : null;
         }

@@ -18,6 +18,8 @@ import {
     Star,
     Image as ImageIcon,
     Link,
+    ArrowUp,
+    ArrowDown,
 } from 'lucide-react';
 import { useSettings } from '@/lib/settings-context';
 
@@ -40,6 +42,7 @@ interface ProductData {
     isFeatured: boolean;
     unavailableUntil: string | null;
     images: string[];
+    displayOrder: number;
     durationLabel: string;
     categoryId: string;
     category: { name: string };
@@ -77,6 +80,7 @@ export default function AdminProductsPage() {
         images: '',
         categoryId: '',
         isActive: true,
+        displayOrder: '0',
         unavailableUntil: '',
         durationLabel: '',
     });
@@ -125,6 +129,7 @@ export default function AdminProductsPage() {
             images: formData.images.trim() ? [formData.images.trim()] : [],
             categoryId: formData.categoryId,
             isActive: formData.isActive,
+            displayOrder: parseInt(formData.displayOrder) || 0,
             durationLabel: formData.durationLabel,
             unavailableUntil: formData.unavailableUntil || null,
         };
@@ -161,6 +166,7 @@ export default function AdminProductsPage() {
             images: (product.images || [])[0] || '',
             categoryId: product.categoryId,
             isActive: product.isActive,
+            displayOrder: String(product.displayOrder || 0),
             unavailableUntil: product.unavailableUntil ? new Date(product.unavailableUntil).toISOString().slice(0, 16) : '',
             durationLabel: product.durationLabel || '',
         });
@@ -320,10 +326,28 @@ export default function AdminProductsPage() {
             images: '',
             categoryId: categories[0]?.id || '',
             isActive: true,
+            displayOrder: '0',
             unavailableUntil: '',
             durationLabel: '',
         });
         setFormVariants([]);
+    };
+
+    const handleMoveOrder = async (product: ProductData, direction: 'up' | 'down') => {
+        const newOrder = direction === 'up' 
+            ? Math.max(0, (product.displayOrder || 0) - 1) 
+            : (product.displayOrder || 0) + 1;
+        setProducts(prev => prev.map(p => p.id === product.id ? { ...p, displayOrder: newOrder } : p));
+        try {
+            await fetch(`/api/products/${product.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ displayOrder: newOrder }),
+            });
+            fetchData();
+        } catch {
+            setProducts(prev => prev.map(p => p.id === product.id ? { ...p, displayOrder: product.displayOrder } : p));
+        }
     };
 
     const isUnavailable = (product: ProductData) => {
@@ -514,6 +538,17 @@ export default function AdminProductsPage() {
                                     placeholder="e.g. شهري, سنوي, yearly, monthly"
                                 />
                                 <p className="text-xs text-gray-400 mt-1">Text shown on product card like &quot;170 EGP /شهري&quot;</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Display Order</label>
+                                <input
+                                    type="number"
+                                    value={formData.displayOrder}
+                                    onChange={(e) => setFormData({ ...formData, displayOrder: e.target.value })}
+                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                                    placeholder="0"
+                                />
+                                <p className="text-xs text-gray-400 mt-1">Lower numbers appear first (0, 1, 2...)</p>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Features (one per line)</label>
@@ -724,12 +759,28 @@ export default function AdminProductsPage() {
                                             )}
                                         </div>
                                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                                            {product.category?.name} · {product.basePrice} {currencySymbol}
+                                            {product.category?.name} · {product.basePrice} {currencySymbol} · <span className="text-violet-500">Order: {product.displayOrder || 0}</span>
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-1 shrink-0">
+                                    {/* Move Order */}
+                                    <button
+                                        onClick={() => handleMoveOrder(product, 'up')}
+                                        className="p-2 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-500/10 transition"
+                                        title="Move Up (lower order number)"
+                                    >
+                                        <ArrowUp className="w-4 h-4 text-violet-500" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleMoveOrder(product, 'down')}
+                                        className="p-2 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-500/10 transition"
+                                        title="Move Down (higher order number)"
+                                    >
+                                        <ArrowDown className="w-4 h-4 text-violet-500" />
+                                    </button>
+                                    <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />
                                     {/* Toggle Unavailable Period */}
                                     {isUnavailable(product) ? (
                                         <button

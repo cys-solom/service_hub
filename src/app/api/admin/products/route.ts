@@ -6,7 +6,7 @@ export async function GET() {
     try {
         const products = await prisma.product.findMany({
             include: { category: true, variants: true },
-            orderBy: { createdAt: 'desc' },
+            orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
         });
 
         const parsed = products.map((p) => ({
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { name, slug, description, features, basePrice, discount, images, categoryId, isActive, unavailableUntil, variants } = body;
+        const { name, slug, description, features, basePrice, discount, images, categoryId, isActive, unavailableUntil, variants, displayOrder } = body;
 
         const product = await prisma.product.create({
             data: {
@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
                 images: JSON.stringify(images || []),
                 categoryId,
                 isActive: isActive ?? true,
+                displayOrder: parseInt(String(displayOrder || 0)) || 0,
                 unavailableUntil: unavailableUntil ? new Date(unavailableUntil) : null,
                 variants: variants && variants.length > 0 ? {
                     create: variants.map((v: { title: string; duration: string; price: string | number }) => ({

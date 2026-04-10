@@ -7,7 +7,7 @@ export async function GET() {
         const products = await prisma.product.findMany({
             where: { isActive: true },
             include: { category: true, variants: { where: { isActive: true } } },
-            orderBy: { createdAt: 'desc' },
+            orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
         });
 
         const now = new Date();
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { name, slug, description, features, basePrice, discount, images, categoryId, isActive, unavailableUntil, variants, durationLabel } = body;
+        const { name, slug, description, features, basePrice, discount, images, categoryId, isActive, unavailableUntil, variants, durationLabel, displayOrder } = body;
 
         const product = await prisma.product.create({
             data: {
@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
                 categoryId,
                 isActive: isActive ?? true,
                 outOfStock: body.outOfStock ?? false,
+                displayOrder: parseInt(String(displayOrder || 0)) || 0,
                 durationLabel: durationLabel || '',
                 unavailableUntil: unavailableUntil ? new Date(unavailableUntil) : null,
                 variants: variants && variants.length > 0 ? {

@@ -63,8 +63,11 @@ function ProductsContent() {
                     return b.basePrice - a.basePrice;
                 case 'popular':
                     return (b.orderCount || 0) - (a.orderCount || 0);
-                default:
+                default: {
+                    const orderDiff = (a.displayOrder || 0) - (b.displayOrder || 0);
+                    if (orderDiff !== 0) return orderDiff;
                     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                }
             }
         });
 

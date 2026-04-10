@@ -24,6 +24,7 @@ export interface Product {
     images: string[];
     durationLabel: string;
     categoryId: string;
+    displayOrder: number;
     orderCount: number;
     category: Category;
     variants: ProductVariant[];
