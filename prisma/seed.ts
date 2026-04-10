@@ -67,14 +67,14 @@ async function main() {
     },
   });
 
-  // Local SVG logos (stored in /public/logos/)
+  // Product logos (stored in /public/logos/)
   const GEMINI_IMAGE = '/logos/gemini.svg';
-  const CHATGPT_IMAGE = '/logos/chatgpt.svg';
-  const CANVA_IMAGE = '/logos/canva.svg';
-  const CAPCUT_IMAGE = '/logos/capcut.svg';
+  const CHATGPT_IMAGE = '/logos/chatgpt.png';
+  const CANVA_IMAGE = '/logos/canva.png';
+  const CAPCUT_IMAGE = '/logos/capcut.png';
   const OFFICE_IMAGE = '/logos/office.svg';
-  const ADOBE_IMAGE = '/logos/adobe.svg';
-  const PERPLEXITY_IMAGE = '/logos/perplexity.svg';
+  const ADOBE_IMAGE = '/logos/adobe.png';
+  const PERPLEXITY_IMAGE = '/logos/perplexity.png';
   const GROK_IMAGE = '/logos/grok.svg';
 
   // Create products
