@@ -33,16 +33,30 @@ export async function PUT(request: NextRequest) {
         }
 
         const body = await request.json();
+
+        // Only allow known fields to prevent arbitrary data injection
+        const allowedFields = [
+            'storeName', 'whatsappPhone', 'currency', 'seoTitle', 'seoDescription',
+            'theme', 'heroStat1Value', 'heroStat1Label', 'heroStat2Value', 'heroStat2Label',
+            'heroStat3Value', 'heroStat3Label', 'contentEn', 'contentAr'
+        ];
+        const sanitizedData: Record<string, string> = {};
+        for (const key of allowedFields) {
+            if (body[key] !== undefined) {
+                sanitizedData[key] = body[key];
+            }
+        }
+
         const existing = await prisma.settings.findFirst();
 
         if (existing) {
             const settings = await prisma.settings.update({
                 where: { id: existing.id },
-                data: body,
+                data: sanitizedData,
             });
             return NextResponse.json(settings);
         } else {
-            const settings = await prisma.settings.create({ data: body });
+            const settings = await prisma.settings.create({ data: sanitizedData });
             return NextResponse.json(settings);
         }
     } catch {

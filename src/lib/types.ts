@@ -10,12 +10,22 @@ export interface CartItem {
     quantity: number;
 }
 
+export interface WarrantyOption {
+    label: string;
+    labelAr: string;
+    days: number;
+    price: number;
+}
+
 export interface Product {
     id: string;
     name: string;
+    nameAr?: string;
     slug: string;
     description: string;
+    descriptionAr?: string;
     features: string[];
+    featuresAr?: string[];
     basePrice: number;
     discount: number;
     isActive: boolean;
@@ -23,6 +33,8 @@ export interface Product {
     isFeatured: boolean;
     images: string[];
     durationLabel: string;
+    warrantyOptions: WarrantyOption[];
+    fullWarranty: boolean;
     categoryId: string;
     displayOrder: number;
     orderCount: number;
@@ -37,6 +49,7 @@ export interface ProductVariant {
     title: string;
     duration: string;
     price: number;
+    warrantyDays: number;
     isActive: boolean;
     outOfStock: boolean;
 }
@@ -75,4 +88,6 @@ export interface Settings {
     heroStat2Label: string;
     heroStat3Value: string;
     heroStat3Label: string;
+    contentEn?: string;
+    contentAr?: string;
 }

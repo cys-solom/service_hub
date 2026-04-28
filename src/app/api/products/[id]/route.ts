@@ -21,6 +21,7 @@ export async function GET(
             ...product,
             images: JSON.parse(product.images),
             features: JSON.parse(product.features),
+            featuresAr: product.featuresAr ? JSON.parse(product.featuresAr) : [],
         });
     } catch {
         return NextResponse.json({ error: 'Failed to fetch product' }, { status: 500 });
@@ -54,6 +55,11 @@ export async function PUT(
         if (body.outOfStock !== undefined) data.outOfStock = body.outOfStock;
         if (body.isFeatured !== undefined) data.isFeatured = body.isFeatured;
         if (body.durationLabel !== undefined) data.durationLabel = body.durationLabel;
+        if (body.nameAr !== undefined) data.nameAr = body.nameAr;
+        if (body.descriptionAr !== undefined) data.descriptionAr = body.descriptionAr;
+        if (body.featuresAr !== undefined) data.featuresAr = JSON.stringify(body.featuresAr);
+        if (body.warrantyOptions !== undefined) data.warrantyOptions = JSON.stringify(body.warrantyOptions);
+        if (body.fullWarranty !== undefined) data.fullWarranty = body.fullWarranty;
         if (displayOrder !== undefined) data.displayOrder = parseInt(String(displayOrder)) || 0;
         if (unavailableUntil !== undefined) {
             data.unavailableUntil = unavailableUntil ? new Date(unavailableUntil) : null;
@@ -69,6 +75,7 @@ export async function PUT(
             ...product,
             images: JSON.parse(product.images),
             features: JSON.parse(product.features),
+            featuresAr: product.featuresAr ? JSON.parse(product.featuresAr) : [],
         });
     } catch {
         return NextResponse.json({ error: 'Failed to update product' }, { status: 500 });

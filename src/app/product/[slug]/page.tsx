@@ -13,12 +13,16 @@ import {
     Plus,
     Minus,
     Ban,
+    Tag,
+    X,
+    Shield,
 } from 'lucide-react';
 import { useCart } from '@/lib/cart-context';
-import { Product, ProductVariant, Settings } from '@/lib/types';
+import { Product, ProductVariant, Settings, WarrantyOption } from '@/lib/types';
 import { buildWhatsAppMessage, generateWhatsAppUrl, generateOrderCode, openWhatsApp } from '@/lib/whatsapp';
 import { useI18n } from '@/lib/i18n';
 import { useSettings } from '@/lib/settings-context';
+import OptimizedImage from '@/components/OptimizedImage';
 
 export default function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = use(params);
@@ -33,6 +37,13 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
     const [customerName, setCustomerName] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
     const [showOrderForm, setShowOrderForm] = useState(false);
+    const [selectedWarrantyIndex, setSelectedWarrantyIndex] = useState(-1);
+    const [couponCode, setCouponCode] = useState('');
+    const [couponLoading, setCouponLoading] = useState(false);
+    const [couponError, setCouponError] = useState('');
+    const [appliedCoupon, setAppliedCoupon] = useState<{
+        code: string; discount: number; isPercent: boolean; discountAmount: number;
+    } | null>(null);
     const { t, locale } = useI18n();
     const { currencySymbol, currency } = useSettings();
 
@@ -57,9 +68,61 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
     }, [slug, router]);
 
     const currentPrice = selectedVariant?.price || product?.basePrice || 0;
+    const rawWo = product?.warrantyOptions;
+    const warrantyOptions: WarrantyOption[] = Array.isArray(rawWo) ? rawWo : (typeof rawWo === 'string' ? (() => { try { return JSON.parse(rawWo); } catch { return []; } })() : []);
+    const selectedWarranty = selectedWarrantyIndex >= 0 ? warrantyOptions[selectedWarrantyIndex] : null;
+    const warrantyPrice = selectedWarranty?.price || 0;
+    const subtotal = (currentPrice * quantity) + warrantyPrice;
+    const discountAmount = appliedCoupon?.discountAmount || 0;
+    const finalPrice = Math.max(0, subtotal - discountAmount);
     const isOutOfStock = product?.outOfStock || false;
     const isSelectedVariantOutOfStock = selectedVariant?.outOfStock || false;
     const canPurchase = !isOutOfStock && !isSelectedVariantOutOfStock;
+
+    // Recalculate coupon when price/quantity changes
+    useEffect(() => {
+        if (appliedCoupon) {
+            const newSubtotal = currentPrice * quantity;
+            const newDiscount = appliedCoupon.isPercent
+                ? (newSubtotal * appliedCoupon.discount) / 100
+                : appliedCoupon.discount;
+            setAppliedCoupon(prev => prev ? { ...prev, discountAmount: Math.min(newDiscount, newSubtotal) } : null);
+        }
+    }, [currentPrice, quantity]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) return;
+        setCouponLoading(true);
+        setCouponError('');
+        try {
+            const res = await fetch('/api/coupons/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: couponCode, orderTotal: subtotal }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setCouponError(data.error || 'Invalid coupon');
+            } else {
+                setAppliedCoupon({
+                    code: data.coupon.code,
+                    discount: data.coupon.discount,
+                    isPercent: data.coupon.isPercent,
+                    discountAmount: data.discountAmount,
+                });
+                setCouponCode('');
+            }
+        } catch {
+            setCouponError('Failed to validate coupon');
+        }
+        setCouponLoading(false);
+    };
+
+    const handleRemoveCoupon = () => {
+        setAppliedCoupon(null);
+        setCouponCode('');
+        setCouponError('');
+    };
 
     const handleAddToCart = () => {
         if (!product || !selectedVariant) return;
@@ -103,7 +166,8 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                             quantity,
                         },
                     ],
-                    totalPrice: selectedVariant.price * quantity,
+                    totalPrice: finalPrice,
+                    couponCode: appliedCoupon?.code || null,
                 }),
             });
         } catch (err) {
@@ -122,7 +186,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                     quantity,
                 },
             ],
-            totalPrice: selectedVariant.price * quantity,
+            totalPrice: finalPrice,
             currency: currency || 'EGP',
             locale,
         });
@@ -174,15 +238,18 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.5 }}
                     >
-                        <div className="rounded-3xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800/50 p-12 flex items-center justify-center min-h-[320px]">
+                        <div className="rounded-3xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800/50 p-8 sm:p-12 flex items-center justify-center min-h-[240px] sm:min-h-[320px]">
                             {product.images?.[0] ? (
-                                <img
+                                <OptimizedImage
                                     src={product.images[0]}
                                     alt={product.name}
-                                    className="max-w-[200px] max-h-[200px] object-contain"
+                                    width={200}
+                                    height={200}
+                                    className="max-w-[150px] sm:max-w-[200px] max-h-[150px] sm:max-h-[200px] object-contain"
+                                    priority
                                 />
                             ) : (
-                                <Package className="w-32 h-32 text-gray-300 dark:text-gray-600" />
+                                <Package className="w-24 h-24 sm:w-32 sm:h-32 text-gray-300 dark:text-gray-600" />
                             )}
                         </div>
                     </motion.div>
@@ -209,11 +276,11 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                         </div>
 
                         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                            {product.name}
+                            {locale === 'ar' && product.nameAr ? product.nameAr : product.name}
                         </h1>
 
                         <p className="text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-                            {product.description}
+                            {locale === 'ar' && product.descriptionAr ? product.descriptionAr : product.description}
                         </p>
 
                         {/* Features */}
@@ -221,7 +288,10 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                             <div className="mb-6">
                                 <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{t.product.features}</h3>
                                 <ul className="grid grid-cols-1 gap-2">
-                                    {product.features.map((feature, i) => (
+                                    {(locale === 'ar' && product.featuresAr && product.featuresAr.length > 0
+                                        ? product.featuresAr
+                                        : product.features
+                                    ).map((feature, i) => (
                                         <li key={i} className="flex items-start gap-2">
                                             <Check className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                                             <span className="text-sm text-gray-600 dark:text-gray-400">{feature}</span>
@@ -254,6 +324,12 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                                             <div className={`text-lg font-bold mt-1 ${variant.outOfStock ? 'text-gray-400 line-through' : 'text-violet-600 dark:text-violet-400'}`}>
                                                 {variant.price} {currencySymbol}
                                             </div>
+                                            {variant.warrantyDays > 0 && (
+                                                <div className="flex items-center gap-1 mt-2 text-xs text-emerald-600 dark:text-emerald-400">
+                                                    <Shield className="w-3 h-3" />
+                                                    <span>{locale === 'ar' ? `ضمان ${variant.warrantyDays} يوم` : `${variant.warrantyDays} days warranty`}</span>
+                                                </div>
+                                            )}
                                             {variant.outOfStock && (
                                                 <div className="absolute top-2 end-2 text-[10px] font-bold text-red-500 uppercase flex items-center gap-1">
                                                     <Ban className="w-3 h-3" /> Out of Stock
@@ -265,31 +341,158 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                             </div>
                         )}
 
+                        {/* Full Warranty Badge */}
+                        {product?.fullWarranty && (
+                            <div className="mb-4 p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/10 border border-emerald-200 dark:border-emerald-500/20">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0">
+                                        <Shield className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">
+                                            {locale === 'ar' ? '🛡️ ضمان كامل شامل' : '🛡️ Full Warranty Included'}
+                                        </h3>
+                                        <p className="text-xs text-emerald-600/70 dark:text-emerald-400/60 mt-0.5">
+                                            {locale === 'ar' ? 'جميع الباقات تشمل ضمان كامل بدون تكلفة إضافية' : 'All plans include full warranty at no extra cost'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Warranty Upgrade Slider */}
+                        {!product?.fullWarranty && warrantyOptions.length > 0 && (
+                            <div className="mb-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Shield className="w-4 h-4 text-emerald-500" />
+                                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
+                                        {locale === 'ar' ? '🛡️ ضمان إضافي' : '🛡️ Extended Warranty'}
+                                    </h3>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {/* No warranty option */}
+                                    <button
+                                        onClick={() => setSelectedWarrantyIndex(-1)}
+                                        className={`p-3 rounded-xl border-2 text-start transition-all ${
+                                            selectedWarrantyIndex === -1
+                                                ? 'border-gray-400 dark:border-gray-500 bg-gray-50 dark:bg-gray-800'
+                                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                            {locale === 'ar' ? 'بدون ضمان إضافي' : 'No extra warranty'}
+                                        </div>
+                                        <div className="text-sm font-bold text-gray-400 mt-1">
+                                            {locale === 'ar' ? 'مجاني' : 'Free'}
+                                        </div>
+                                    </button>
+                                    {/* Warranty tiers */}
+                                    {warrantyOptions.map((opt, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setSelectedWarrantyIndex(idx)}
+                                            className={`p-3 rounded-xl border-2 text-start transition-all relative ${
+                                                selectedWarrantyIndex === idx
+                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10'
+                                                    : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-500/50'
+                                            }`}
+                                        >
+                                            {selectedWarrantyIndex === idx && (
+                                                <div className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                                                    <Check className="w-3 h-3 text-white" />
+                                                </div>
+                                            )}
+                                            <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                                {locale === 'ar' ? opt.labelAr || opt.label : opt.label}
+                                            </div>
+                                            <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+                                                +{opt.price} {currencySymbol}
+                                            </div>
+                                            <div className="text-[10px] text-gray-400 mt-0.5">
+                                                {opt.days} {locale === 'ar' ? 'يوم' : 'days'}
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Price & Quantity */}
-                        <div className="flex items-center justify-between mb-6 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50">
-                            <div>
-                                <span className="text-sm text-gray-500 dark:text-gray-400">{t.product.totalPrice}</span>
-                                <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                                    {(currentPrice * quantity).toFixed(2)} {currencySymbol}
-                                </p>
+                        <div className="mb-6 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">{t.product.totalPrice}</span>
+                                    {appliedCoupon ? (
+                                        <div>
+                                            <p className="text-lg text-gray-400 line-through">
+                                                {subtotal.toFixed(2)} {currencySymbol}
+                                            </p>
+                                            <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+                                                {finalPrice.toFixed(2)} {currencySymbol}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                                            {subtotal.toFixed(2)} {currencySymbol}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                        className="w-10 h-10 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                                    >
+                                        <Minus className="w-4 h-4" />
+                                    </button>
+                                    <span className="text-lg font-semibold text-gray-900 dark:text-white w-8 text-center">
+                                        {quantity}
+                                    </span>
+                                    <button
+                                        onClick={() => setQuantity(quantity + 1)}
+                                        className="w-10 h-10 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                    className="w-10 h-10 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                                >
-                                    <Minus className="w-4 h-4" />
-                                </button>
-                                <span className="text-lg font-semibold text-gray-900 dark:text-white w-8 text-center">
-                                    {quantity}
-                                </span>
-                                <button
-                                    onClick={() => setQuantity(quantity + 1)}
-                                    className="w-10 h-10 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                </button>
-                            </div>
+
+                            {/* Coupon Section */}
+                            {appliedCoupon ? (
+                                <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-800">
+                                    <div className="flex items-center gap-2">
+                                        <Tag className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                        <span className="text-sm font-mono font-bold text-emerald-700 dark:text-emerald-400">{appliedCoupon.code}</span>
+                                        <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                                            (-{appliedCoupon.isPercent ? `${appliedCoupon.discount}%` : `${appliedCoupon.discount} ${currencySymbol}`})
+                                        </span>
+                                    </div>
+                                    <button onClick={handleRemoveCoupon} className="p-1 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 rounded transition">
+                                        <X className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="flex items-stretch gap-0 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                                        <input
+                                            type="text"
+                                            placeholder={locale === 'ar' ? 'كود الخصم' : 'Coupon code'}
+                                            value={couponCode}
+                                            onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }}
+                                            className="flex-1 min-w-0 px-3 py-2.5 bg-white dark:bg-gray-900/50 text-gray-900 dark:text-white placeholder-gray-400 outline-none text-sm font-mono uppercase"
+                                        />
+                                        <button
+                                            onClick={handleApplyCoupon}
+                                            disabled={couponLoading || !couponCode.trim()}
+                                            className="px-4 py-2.5 bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                                        >
+                                            {couponLoading ? '...' : locale === 'ar' ? 'تطبيق' : 'Apply'}
+                                        </button>
+                                    </div>
+                                    {couponError && (
+                                        <p className="text-xs text-red-500 mt-1.5">{couponError}</p>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Order Form */}

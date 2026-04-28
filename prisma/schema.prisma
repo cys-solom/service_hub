@@ -17,39 +17,45 @@ model Category {
 }
 
 model Product {
-  id               String           @id @default(cuid())
-  name             String
-  slug             String           @unique
-  description      String
-  features         String           @default("[]")
-  basePrice        Float
-  discount         Float            @default(0)
-  isActive         Boolean          @default(true)
-  outOfStock       Boolean          @default(false)
-  isFeatured       Boolean          @default(false)
-  unavailableUntil DateTime?
-  images           String           @default("[]")
-  durationLabel    String           @default("")
-  categoryId       String
-  category         Category         @relation(fields: [categoryId], references: [id])
-  variants         ProductVariant[]
-  orderCount       Int              @default(0)
-  displayOrder     Int              @default(0)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  id                    String           @id @default(cuid())
+  name                  String
+  nameAr                String           @default("")
+  slug                  String           @unique
+  description           String           @default("")
+  descriptionAr         String           @default("")
+  features              String           @default("[]")
+  featuresAr            String           @default("[]")
+  basePrice             Float
+  discount              Float            @default(0)
+  isActive              Boolean          @default(true)
+  outOfStock            Boolean          @default(false)
+  isFeatured            Boolean          @default(false)
+  unavailableUntil      DateTime?
+  images                String           @default("[]")
+  durationLabel         String           @default("")
+  warrantyOptions       String           @default("[]")
+  fullWarranty          Boolean          @default(false)
+  categoryId            String
+  category              Category         @relation(fields: [categoryId], references: [id])
+  variants              ProductVariant[]
+  orderCount            Int              @default(0)
+  displayOrder          Int              @default(0)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
 }
 
 model ProductVariant {
-  id        String   @id @default(cuid())
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  title     String
-  duration  String
-  price      Float
-  isActive   Boolean  @default(true)
-  outOfStock Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  title        String
+  duration     String
+  price        Float
+  warrantyDays Int      @default(0)
+  isActive     Boolean  @default(true)
+  outOfStock   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Order {
@@ -91,4 +97,18 @@ model Admin {
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Coupon {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  discount      Float
+  isPercent     Boolean   @default(true)
+  maxUses       Int       @default(0)
+  usedCount     Int       @default(0)
+  minOrderValue Float     @default(0)
+  expiresAt     DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }

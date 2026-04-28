@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -11,6 +11,13 @@ function ThankYouContent() {
     const searchParams = useSearchParams();
     const orderCode = searchParams.get('code') || 'N/A';
     const { t } = useI18n();
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(orderCode);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     return (
         <div className="min-h-screen flex items-center justify-center px-4">
@@ -39,9 +46,25 @@ function ThankYouContent() {
 
                 <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 p-6 mb-8">
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{t.thankYou.orderCode}</p>
-                    <p className="text-2xl font-bold font-mono text-violet-600 dark:text-violet-400">
+                    <p className="text-2xl font-bold font-mono text-violet-600 dark:text-violet-400 mb-3">
                         {orderCode}
                     </p>
+                    <button
+                        onClick={handleCopy}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                    >
+                        {copied ? (
+                            <>
+                                <CheckCircle className="w-4 h-4 text-emerald-500" />
+                                <span className="text-emerald-600 dark:text-emerald-400">Copied!</span>
+                            </>
+                        ) : (
+                            <>
+                                <Package className="w-4 h-4" />
+                                Copy Code
+                            </>
+                        )}
+                    </button>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">

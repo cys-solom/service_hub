@@ -38,9 +38,14 @@ export async function PUT(
         const { id } = await params;
         const body = await request.json();
 
+        // Only allow updating specific fields
+        const allowedUpdates: Record<string, unknown> = {};
+        if (body.status !== undefined) allowedUpdates.status = body.status;
+        if (body.notes !== undefined) allowedUpdates.notes = body.notes;
+
         const order = await prisma.order.update({
             where: { id },
-            data: body,
+            data: allowedUpdates,
         });
 
         return NextResponse.json(order);

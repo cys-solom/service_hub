@@ -9,6 +9,7 @@ import {
     Package,
     FolderOpen,
     ShoppingBag,
+    Tag,
     Settings,
     FileText,
     LogOut,
@@ -21,6 +22,7 @@ const sidebarLinks = [
     { href: '/admin/products', icon: Package, label: 'Products' },
     { href: '/admin/categories', icon: FolderOpen, label: 'Categories' },
     { href: '/admin/orders', icon: ShoppingBag, label: 'Orders' },
+    { href: '/admin/coupons', icon: Tag, label: 'Coupons' },
     { href: '/admin/content', icon: FileText, label: 'Content' },
     { href: '/admin/settings', icon: Settings, label: 'Settings' },
 ];

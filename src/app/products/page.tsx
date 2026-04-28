@@ -4,10 +4,11 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Search, Filter, SlidersHorizontal, Package, Star, X, Ban } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, Package, Star, X, Ban, Shield } from 'lucide-react';
 import { Product, Category } from '@/lib/types';
 import { useI18n } from '@/lib/i18n';
 import { useSettings } from '@/lib/settings-context';
+import OptimizedImage from '@/components/OptimizedImage';
 
 function ProductsContent() {
     const searchParams = useSearchParams();
@@ -17,11 +18,12 @@ function ProductsContent() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
-    const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
+    const [priceRange, setPriceRange] = useState<[number, number]>([0, 99999]);
+    const [maxPrice, setMaxPrice] = useState(500);
     const [duration, setDuration] = useState('');
-    const [sort, setSort] = useState('newest');
+    const [sort, setSort] = useState('recommended');
     const [showFilters, setShowFilters] = useState(false);
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -34,6 +36,12 @@ function ProductsContent() {
             const cats = await catRes.json();
             setProducts(prods);
             setCategories(cats);
+            // Calculate dynamic max price
+            if (Array.isArray(prods) && prods.length > 0) {
+                const max = Math.ceil(Math.max(...prods.map((p: Product) => p.basePrice)) / 50) * 50;
+                setMaxPrice(max);
+                setPriceRange([0, max]);
+            }
         } catch {
             console.error('Failed to fetch data');
         }
@@ -46,7 +54,12 @@ function ProductsContent() {
 
     const filtered = products
         .filter((p) => {
-            if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
+            if (search) {
+                const q = search.toLowerCase();
+                const matchEn = p.name.toLowerCase().includes(q);
+                const matchAr = p.nameAr?.toLowerCase().includes(q);
+                if (!matchEn && !matchAr) return false;
+            }
             if (selectedCategory && p.category?.slug !== selectedCategory) return false;
             if (p.basePrice < priceRange[0] || p.basePrice > priceRange[1]) return false;
             if (duration) {
@@ -68,6 +81,8 @@ function ProductsContent() {
                     if (orderDiff !== 0) return orderDiff;
                     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
                 }
+                case 'newest':
+                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
             }
         });
 
@@ -111,6 +126,7 @@ function ProductsContent() {
                         onChange={(e) => setSort(e.target.value)}
                         className="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/50 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 transition"
                     >
+                        <option value="recommended">{locale === 'ar' ? 'الترتيب المقترح' : 'Recommended'}</option>
                         <option value="newest">{t.productsPage.newest}</option>
                         <option value="price-asc">{t.productsPage.priceLow}</option>
                         <option value="price-desc">{t.productsPage.priceHigh}</option>
@@ -168,6 +184,7 @@ function ProductsContent() {
                                                 }`}
                                         >
                                             {cat.name}
+                                            <span className="text-[10px] text-gray-400 ms-1">({products.filter(p => p.category?.slug === cat.slug).length})</span>
                                         </button>
                                     ))}
                                 </div>
@@ -273,69 +290,81 @@ function ProductsContent() {
                                         }}
                                     >
                                         <Link href={`/product/${product.slug}`}>
-                                            <div className={`group rounded-2xl border ${product.outOfStock ? 'border-red-200/50 dark:border-red-800/30' : 'border-gray-200 dark:border-gray-800'} bg-white dark:bg-gray-900/50 p-6 card-hover h-full flex flex-col relative overflow-hidden`}>
-                                                {/* Out of Stock Overlay */}
-                                                {product.outOfStock && (
-                                                    <div className="absolute inset-0 bg-gray-900/5 dark:bg-black/20 z-10 pointer-events-none" />
-                                                )}
-
-                                                {/* Out of Stock Badge */}
-                                                {product.outOfStock && (
-                                                    <div className="absolute top-3 end-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/90 dark:bg-red-600/90 text-white text-[11px] font-bold shadow-lg shadow-red-500/20 backdrop-blur-sm">
-                                                        <Ban className="w-3 h-3" />
-                                                        <span>غير متاح حالياً</span>
-                                                    </div>
-                                                )}
-
-                                                <div className={`flex items-center gap-4 mb-4 ${product.outOfStock ? 'opacity-60' : ''}`}>
-                                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center overflow-hidden shrink-0">
-                                                        {product.images?.[0] ? (
-                                                            <img
-                                                                src={product.images[0]}
-                                                                alt={product.name}
-                                                                className="w-8 h-8 object-contain"
-                                                            />
-                                                        ) : (
-                                                            <Package className="w-6 h-6 text-violet-500" />
-                                                        )}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <h3 className={`font-semibold ${product.outOfStock ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400'} transition-colors truncate`}>
-                                                            {product.name}
-                                                        </h3>
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                            {product.category?.name}
-                                                        </p>
-                                                    </div>
+                                            <div className={`group rounded-2xl border ${product.outOfStock ? 'border-red-200/50 dark:border-red-800/30' : 'border-gray-200/80 dark:border-gray-800/80 hover:border-violet-300 dark:hover:border-violet-500/40'} bg-white dark:bg-gray-900/60 card-hover h-full flex flex-col relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-violet-500/5`}>
+                                                {/* Top image section */}
+                                                <div className={`relative h-40 bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-500/5 dark:to-indigo-500/5 flex items-center justify-center overflow-hidden ${product.outOfStock ? 'opacity-50' : ''}`}>
+                                                    {product.images?.[0] ? (
+                                                        <OptimizedImage
+                                                            src={product.images[0]}
+                                                            alt={product.name}
+                                                            width={120}
+                                                            height={120}
+                                                            className="w-28 h-28 object-contain group-hover:scale-110 transition-transform duration-500"
+                                                        />
+                                                    ) : (
+                                                        <Package className="w-16 h-16 text-violet-400/60" />
+                                                    )}
+                                                    {/* Out of Stock Badge */}
+                                                    {product.outOfStock && (
+                                                        <div className="absolute top-3 end-3 z-20 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/90 text-white text-[10px] font-bold backdrop-blur-sm">
+                                                            <Ban className="w-3 h-3" />
+                                                            {t.productsPage.unavailable}
+                                                        </div>
+                                                    )}
+                                                    {/* Bestseller badge */}
+                                                    {!product.outOfStock && (product.orderCount || 0) >= 10 && (
+                                                        <div className="absolute top-3 start-3 z-20 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/90 text-white text-[10px] font-bold backdrop-blur-sm">
+                                                            <Star className="w-3 h-3 fill-current" />
+                                                            {locale === 'ar' ? 'الأكثر مبيعاً' : 'Bestseller'}
+                                                        </div>
+                                                    )}
+                                                    {/* Warranty badge */}
+                                                    {(product.fullWarranty || product.variants?.some(v => v.warrantyDays > 0)) && (
+                                                        <div className="absolute bottom-3 end-3 flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/90 text-white text-[10px] font-bold backdrop-blur-sm">
+                                                            <Shield className="w-3 h-3" />
+                                                            {product.fullWarranty ? (locale === 'ar' ? 'ضمان كامل' : 'Full Warranty') : (locale === 'ar' ? 'ضمان' : 'Warranty')}
+                                                        </div>
+                                                    )}
+                                                    {/* Hover gradient overlay */}
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-white/60 dark:from-gray-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                                 </div>
 
-                                                <p className={`text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2 flex-1 ${product.outOfStock ? 'opacity-60' : ''}`}>
-                                                    {product.description}
-                                                </p>
+                                                {/* Content section */}
+                                                <div className="p-5 flex flex-col flex-1">
+                                                    <h3 className={`font-bold text-base mb-1 ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400'} transition-colors line-clamp-1`}>
+                                                        {locale === 'ar' && product.nameAr ? product.nameAr : product.name}
+                                                    </h3>
 
-                                                <div className={`flex items-end justify-between mt-auto ${product.outOfStock ? 'opacity-60' : ''}`}>
-                                                    <div>
-                                                        {product.discount > 0 && (
-                                                            <span className="text-xs text-red-500 font-medium line-through me-2">
-                                                                {product.basePrice} {currencySymbol}
-                                                            </span>
-                                                        )}
-                                                        <span className={`text-xl font-bold ${product.outOfStock ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
-                                                            {product.discount > 0
-                                                                ? (product.basePrice - product.discount).toFixed(0)
-                                                                : product.basePrice} {currencySymbol}
-                                                        </span>
-                                                        {product.durationLabel && (
-                                                            <span className="text-sm text-gray-400 ms-1">/{product.durationLabel}</span>
-                                                        )}
-                                                        {product.variants?.length > 1 && (
-                                                            <span className="text-xs text-violet-500 ms-2">({product.variants.length} plans)</span>
-                                                        )}
-                                                    </div>
+                                                    {product.variants?.length > 1 && (
+                                                        <p className="text-[11px] text-violet-500 dark:text-violet-400 font-medium mb-3">
+                                                            {product.variants.length} {locale === 'ar' ? 'باقات متاحة' : 'plans available'}
+                                                        </p>
+                                                    )}
 
-                                                    <div className="flex items-center gap-1">
-                                                        <Star className="w-3.5 h-3.5 text-amber-500 fill-current" />
-                                                        <span className="text-xs font-medium text-gray-500">4.9</span>
+                                                    <div className={`flex items-end justify-between mt-auto pt-3 border-t border-gray-100 dark:border-gray-800/50 ${product.outOfStock ? 'opacity-50' : ''}`}>
+                                                        <div>
+                                                            {product.discount > 0 && (
+                                                                <span className="text-[11px] text-red-400 font-medium line-through block">
+                                                                    {product.basePrice} {currencySymbol}
+                                                                </span>
+                                                            )}
+                                                            <div className="flex items-baseline gap-1">
+                                                                <span className={`text-xl font-extrabold ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white'}`}>
+                                                                    {product.discount > 0
+                                                                        ? (product.basePrice - product.discount).toFixed(0)
+                                                                        : product.basePrice}
+                                                                </span>
+                                                                <span className="text-xs text-gray-400 font-medium">{currencySymbol}</span>
+                                                                {product.durationLabel && (
+                                                                    <span className="text-xs text-gray-400">/{product.durationLabel}</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-500/10">
+                                                            <Star className="w-3 h-3 text-amber-500 fill-current" />
+                                                            <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">4.9</span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>

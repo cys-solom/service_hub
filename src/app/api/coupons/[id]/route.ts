@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/auth';
 
+// UPDATE coupon (admin only)
 export async function PUT(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -15,26 +16,27 @@ export async function PUT(
         const { id } = await params;
         const body = await request.json();
 
-        // Only allow updating specific fields
         const allowedUpdates: Record<string, unknown> = {};
-        if (body.title !== undefined) allowedUpdates.title = body.title;
-        if (body.duration !== undefined) allowedUpdates.duration = body.duration;
-        if (body.price !== undefined) allowedUpdates.price = parseFloat(body.price);
-        if (body.warrantyDays !== undefined) allowedUpdates.warrantyDays = parseInt(body.warrantyDays) || 0;
+        if (body.code !== undefined) allowedUpdates.code = body.code.toUpperCase().trim();
+        if (body.discount !== undefined) allowedUpdates.discount = parseFloat(body.discount);
+        if (body.isPercent !== undefined) allowedUpdates.isPercent = body.isPercent;
+        if (body.maxUses !== undefined) allowedUpdates.maxUses = parseInt(body.maxUses) || 0;
+        if (body.minOrderValue !== undefined) allowedUpdates.minOrderValue = parseFloat(body.minOrderValue) || 0;
+        if (body.expiresAt !== undefined) allowedUpdates.expiresAt = body.expiresAt ? new Date(body.expiresAt) : null;
         if (body.isActive !== undefined) allowedUpdates.isActive = body.isActive;
-        if (body.outOfStock !== undefined) allowedUpdates.outOfStock = body.outOfStock;
 
-        const variant = await prisma.productVariant.update({
+        const coupon = await prisma.coupon.update({
             where: { id },
             data: allowedUpdates,
         });
 
-        return NextResponse.json(variant);
+        return NextResponse.json(coupon);
     } catch {
-        return NextResponse.json({ error: 'Failed to update variant' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to update coupon' }, { status: 500 });
     }
 }
 
+// DELETE coupon (admin only)
 export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -46,9 +48,10 @@ export async function DELETE(
         }
 
         const { id } = await params;
-        await prisma.productVariant.delete({ where: { id } });
-        return NextResponse.json({ message: 'Variant deleted' });
+        await prisma.coupon.delete({ where: { id } });
+
+        return NextResponse.json({ message: 'Coupon deleted' });
     } catch {
-        return NextResponse.json({ error: 'Failed to delete variant' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to delete coupon' }, { status: 500 });
     }
 }

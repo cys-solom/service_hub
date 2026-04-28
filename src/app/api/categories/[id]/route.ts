@@ -15,9 +15,15 @@ export async function PUT(
         const { id } = await params;
         const body = await request.json();
 
+        // Only allow updating specific fields
+        const allowedUpdates: Record<string, unknown> = {};
+        if (body.name !== undefined) allowedUpdates.name = body.name;
+        if (body.slug !== undefined) allowedUpdates.slug = body.slug;
+        if (body.isActive !== undefined) allowedUpdates.isActive = body.isActive;
+
         const category = await prisma.category.update({
             where: { id },
-            data: body,
+            data: allowedUpdates,
         });
 
         return NextResponse.json(category);

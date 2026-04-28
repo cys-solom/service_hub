@@ -27,14 +27,18 @@ interface VariantInput {
     title: string;
     duration: string;
     price: string;
+    warrantyDays: string;
 }
 
 interface ProductData {
     id: string;
     name: string;
+    nameAr: string;
     slug: string;
     description: string;
+    descriptionAr: string;
     features: string[];
+    featuresAr: string[];
     basePrice: number;
     discount: number;
     isActive: boolean;
@@ -44,6 +48,8 @@ interface ProductData {
     images: string[];
     displayOrder: number;
     durationLabel: string;
+    fullWarranty: boolean;
+    warrantyOptions: Array<{ label: string; labelAr: string; days: number; price: number }>;
     categoryId: string;
     category: { name: string };
     variants: Array<{
@@ -51,6 +57,7 @@ interface ProductData {
         title: string;
         duration: string;
         price: number;
+        warrantyDays: number;
         isActive: boolean;
         outOfStock: boolean;
     }>;
@@ -72,14 +79,18 @@ export default function AdminProductsPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [formData, setFormData] = useState({
         name: '',
+        nameAr: '',
         slug: '',
         description: '',
+        descriptionAr: '',
         features: '',
+        featuresAr: '',
         basePrice: '',
         discount: '0',
         images: '',
         categoryId: '',
         isActive: true,
+        fullWarranty: false,
         displayOrder: '0',
         unavailableUntil: '',
         durationLabel: '',
@@ -90,10 +101,12 @@ export default function AdminProductsPage() {
         title: '',
         duration: '',
         price: '',
+        warrantyDays: '0',
     });
     const [showUnavailableModal, setShowUnavailableModal] = useState<string | null>(null);
     const [unavailableDate, setUnavailableDate] = useState('');
     const [loadingAction, setLoadingAction] = useState<string | null>(null);
+    const [formWarrantyOptions, setFormWarrantyOptions] = useState<Array<{ label: string; labelAr: string; days: number; price: number }>>([]);
 
     const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
 
@@ -121,16 +134,21 @@ export default function AdminProductsPage() {
         e.preventDefault();
         const body: Record<string, unknown> = {
             name: formData.name,
+            nameAr: formData.nameAr,
             slug: formData.slug,
             description: formData.description,
+            descriptionAr: formData.descriptionAr,
             features: formData.features.split('\n').filter(Boolean),
+            featuresAr: formData.featuresAr.split('\n').filter(Boolean),
             basePrice: formData.basePrice,
             discount: formData.discount,
             images: formData.images.trim() ? [formData.images.trim()] : [],
             categoryId: formData.categoryId,
             isActive: formData.isActive,
+            fullWarranty: formData.fullWarranty,
             displayOrder: parseInt(formData.displayOrder) || 0,
             durationLabel: formData.durationLabel,
+            warrantyOptions: formWarrantyOptions,
             unavailableUntil: formData.unavailableUntil || null,
         };
 
@@ -158,19 +176,25 @@ export default function AdminProductsPage() {
         setEditingProduct(product);
         setFormData({
             name: product.name,
+            nameAr: product.nameAr || '',
             slug: product.slug,
             description: product.description,
+            descriptionAr: product.descriptionAr || '',
             features: (product.features || []).join('\n'),
+            featuresAr: (product.featuresAr || []).join('\n'),
             basePrice: String(product.basePrice),
             discount: String(product.discount),
             images: (product.images || [])[0] || '',
             categoryId: product.categoryId,
             isActive: product.isActive,
+            fullWarranty: product.fullWarranty || false,
             displayOrder: String(product.displayOrder || 0),
             unavailableUntil: product.unavailableUntil ? new Date(product.unavailableUntil).toISOString().slice(0, 16) : '',
             durationLabel: product.durationLabel || '',
         });
         setFormVariants([]);
+        const wo = product.warrantyOptions;
+        setFormWarrantyOptions(Array.isArray(wo) ? wo : (typeof wo === 'string' ? JSON.parse(wo || '[]') : []));
         setShowForm(true);
     };
 
@@ -288,7 +312,7 @@ export default function AdminProductsPage() {
             body: JSON.stringify({ ...variantData, productId }),
         });
         setShowVariantForm(null);
-        setVariantData({ title: '', duration: '', price: '' });
+        setVariantData({ title: '', duration: '', price: '', warrantyDays: '0' });
         fetchData();
     };
 
@@ -302,7 +326,7 @@ export default function AdminProductsPage() {
     };
 
     const addFormVariant = () => {
-        setFormVariants([...formVariants, { title: '', duration: '', price: '' }]);
+        setFormVariants([...formVariants, { title: '', duration: '', price: '', warrantyDays: '0' }]);
     };
 
     const updateFormVariant = (index: number, field: keyof VariantInput, value: string) => {
@@ -316,21 +340,27 @@ export default function AdminProductsPage() {
     };
 
     const resetForm = () => {
+        const maxOrder = products.reduce((max, p) => Math.max(max, p.displayOrder || 0), 0);
         setFormData({
             name: '',
+            nameAr: '',
             slug: '',
             description: '',
+            descriptionAr: '',
             features: '',
+            featuresAr: '',
             basePrice: '',
             discount: '0',
             images: '',
             categoryId: categories[0]?.id || '',
             isActive: true,
-            displayOrder: '0',
+            fullWarranty: false,
+            displayOrder: String(maxOrder + 1),
             unavailableUntil: '',
             durationLabel: '',
         });
         setFormVariants([]);
+        setFormWarrantyOptions([]);
     };
 
     const handleMoveOrder = async (product: ProductData, direction: 'up' | 'down') => {
@@ -378,15 +408,17 @@ export default function AdminProductsPage() {
         return new Date(product.unavailableUntil) > new Date();
     };
 
-    const filteredProducts = products.filter((p) => {
-        if (!searchQuery) return true;
-        const q = searchQuery.toLowerCase();
-        return (
-            p.name.toLowerCase().includes(q) ||
-            p.description.toLowerCase().includes(q) ||
-            p.category?.name.toLowerCase().includes(q)
-        );
-    });
+    const filteredProducts = products
+        .filter((p) => {
+            if (!searchQuery) return true;
+            const q = searchQuery.toLowerCase();
+            return (
+                p.name.toLowerCase().includes(q) ||
+                p.description.toLowerCase().includes(q) ||
+                p.category?.name.toLowerCase().includes(q)
+            );
+        })
+        .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 
     return (
         <div className="space-y-6">
@@ -520,13 +552,33 @@ export default function AdminProductsPage() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description (English)</label>
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    rows={3}
+                                    rows={2}
                                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm resize-none"
-                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name (Arabic) <span className="text-xs text-gray-400">اسم المنتج</span></label>
+                                <input
+                                    value={formData.nameAr}
+                                    onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
+                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                                    dir="rtl"
+                                    placeholder="اسم المنتج بالعربية"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description (Arabic) <span className="text-xs text-gray-400">الوصف</span></label>
+                                <textarea
+                                    value={formData.descriptionAr}
+                                    onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+                                    rows={2}
+                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm resize-none"
+                                    dir="rtl"
+                                    placeholder="وصف المنتج بالعربية"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
@@ -562,6 +614,91 @@ export default function AdminProductsPage() {
                                 />
                                 <p className="text-xs text-gray-400 mt-1">Text shown on product card like &quot;170 EGP /شهري&quot;</p>
                             </div>
+                            {/* Warranty Options */}
+                            <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+                                {/* Full Warranty Checkbox */}
+                                <label className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.fullWarranty}
+                                        onChange={(e) => setFormData({ ...formData, fullWarranty: e.target.checked })}
+                                        className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                    />
+                                    <div>
+                                        <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">🛡️ Full Warranty</span>
+                                        <p className="text-[11px] text-emerald-600/70 dark:text-emerald-400/60">All plans include full warranty — customer doesn&apos;t need to choose</p>
+                                    </div>
+                                </label>
+                                {!formData.fullWarranty && (
+                                <div>
+                                <div className="flex items-center justify-between mb-3">
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Warranty Upgrade Options</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormWarrantyOptions([...formWarrantyOptions, { label: '', labelAr: '', days: 0, price: 0 }])}
+                                        className="text-xs px-3 py-1 bg-violet-100 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 rounded-lg font-medium hover:bg-violet-200 dark:hover:bg-violet-500/20 transition"
+                                    >
+                                        + Add Tier
+                                    </button>
+                                </div>
+                                {formWarrantyOptions.length === 0 ? (
+                                    <p className="text-xs text-gray-400 text-center py-3">No warranty tiers. Click &quot;+ Add Tier&quot; to offer warranty upgrades.</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {formWarrantyOptions.map((opt, idx) => (
+                                            <div key={idx} className="flex items-end gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/30">
+                                                <div className="flex-1">
+                                                    <label className="block text-[10px] text-gray-400 mb-0.5">Label EN</label>
+                                                    <input
+                                                        value={opt.label}
+                                                        onChange={(e) => { const u = [...formWarrantyOptions]; u[idx] = { ...u[idx], label: e.target.value }; setFormWarrantyOptions(u); }}
+                                                        className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs text-gray-900 dark:text-white outline-none"
+                                                        placeholder="1 Month"
+                                                    />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <label className="block text-[10px] text-gray-400 mb-0.5">Label AR</label>
+                                                    <input
+                                                        value={opt.labelAr}
+                                                        onChange={(e) => { const u = [...formWarrantyOptions]; u[idx] = { ...u[idx], labelAr: e.target.value }; setFormWarrantyOptions(u); }}
+                                                        className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs text-gray-900 dark:text-white outline-none text-right"
+                                                        placeholder="شهر"
+                                                        dir="rtl"
+                                                    />
+                                                </div>
+                                                <div className="w-16">
+                                                    <label className="block text-[10px] text-gray-400 mb-0.5">Days</label>
+                                                    <input
+                                                        type="number"
+                                                        value={opt.days}
+                                                        onChange={(e) => { const u = [...formWarrantyOptions]; u[idx] = { ...u[idx], days: parseInt(e.target.value) || 0 }; setFormWarrantyOptions(u); }}
+                                                        className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs text-gray-900 dark:text-white outline-none"
+                                                    />
+                                                </div>
+                                                <div className="w-20">
+                                                    <label className="block text-[10px] text-gray-400 mb-0.5">Price ({currencySymbol})</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        value={opt.price}
+                                                        onChange={(e) => { const u = [...formWarrantyOptions]; u[idx] = { ...u[idx], price: parseFloat(e.target.value) || 0 }; setFormWarrantyOptions(u); }}
+                                                        className="w-full px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs text-gray-900 dark:text-white outline-none"
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormWarrantyOptions(formWarrantyOptions.filter((_, i) => i !== idx))}
+                                                    className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition shrink-0"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                </div>
+                                )}
+                            </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Display Order</label>
                                 <input
@@ -574,13 +711,25 @@ export default function AdminProductsPage() {
                                 <p className="text-xs text-gray-400 mt-1">Lower numbers appear first (0, 1, 2...)</p>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Features (one per line)</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Features (English, one per line)</label>
                                 <textarea
                                     value={formData.features}
                                     onChange={(e) => setFormData({ ...formData, features: e.target.value })}
-                                    rows={3}
+                                    rows={2}
                                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm resize-none"
                                     placeholder={"Feature 1\nFeature 2"}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Features (Arabic) <span className="text-xs text-gray-400">المميزات</span></label>
+                                <textarea
+                                    value={formData.featuresAr}
+                                    onChange={(e) => setFormData({ ...formData, featuresAr: e.target.value })}
+                                    rows={2}
+                                    dir="rtl"
+                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm resize-none"
+                                    placeholder="ميزة 1
+ميزة 2"
                                 />
                             </div>
                             <div>
@@ -782,27 +931,34 @@ export default function AdminProductsPage() {
                                             )}
                                         </div>
                                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                                            {product.category?.name} · {product.basePrice} {currencySymbol} · <span className="text-violet-500">Order: {product.displayOrder || 0}</span>
+                                            {product.category?.name} · {product.basePrice} {currencySymbol}
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-1 shrink-0">
-                                    {/* Move Order */}
-                                    <button
-                                        onClick={() => handleMoveOrder(product, 'up')}
-                                        className="p-2 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-500/10 transition"
-                                        title="Move Up (lower order number)"
-                                    >
-                                        <ArrowUp className="w-4 h-4 text-violet-500" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleMoveOrder(product, 'down')}
-                                        className="p-2 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-500/10 transition"
-                                        title="Move Down (higher order number)"
-                                    >
-                                        <ArrowDown className="w-4 h-4 text-violet-500" />
-                                    </button>
+                                    {/* Quick Order Input */}
+                                    <div className="flex items-center gap-1 me-1">
+                                        <span className="text-[10px] text-gray-400 font-medium">#</span>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={product.displayOrder || 1}
+                                            onChange={(e) => {
+                                                const newOrder = Math.max(1, parseInt(e.target.value) || 1);
+                                                setProducts(prev => prev.map(p =>
+                                                    p.id === product.id ? { ...p, displayOrder: newOrder } : p
+                                                ));
+                                                fetch(`/api/products/${product.id}`, {
+                                                    method: 'PUT',
+                                                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                                                    body: JSON.stringify({ displayOrder: newOrder }),
+                                                }).catch(() => fetchData());
+                                            }}
+                                            className="w-12 px-1.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-center text-sm font-bold text-violet-600 dark:text-violet-400 outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                            title="Display order (lower = first)"
+                                        />
+                                    </div>
                                     <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />
                                     {/* Toggle Unavailable Period */}
                                     {isUnavailable(product) ? (
@@ -939,6 +1095,16 @@ export default function AdminProductsPage() {
                                                 placeholder={currencySymbol}
                                                 value={variantData.price}
                                                 onChange={(e) => setVariantData({ ...variantData, price: e.target.value })}
+                                                className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white outline-none w-24"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">🛡️ Warranty (days)</label>
+                                            <input
+                                                type="number"
+                                                placeholder="0"
+                                                value={variantData.warrantyDays}
+                                                onChange={(e) => setVariantData({ ...variantData, warrantyDays: e.target.value })}
                                                 className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white outline-none w-24"
                                             />
                                         </div>

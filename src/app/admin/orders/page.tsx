@@ -59,21 +59,34 @@ export default function AdminOrdersPage() {
     }, [filterStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleStatusChange = async (orderId: string, newStatus: string) => {
-        await fetch(`/api/orders/${orderId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ status: newStatus }),
-        });
-        fetchOrders();
+        // Optimistic update
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+        try {
+            const res = await fetch(`/api/orders/${orderId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ status: newStatus }),
+            });
+            if (!res.ok) throw new Error('Failed');
+        } catch {
+            fetchOrders(); // Revert on error
+        }
     };
 
     const handleDeleteOrder = async (orderId: string) => {
         if (!confirm('Are you sure you want to delete this order?')) return;
-        await fetch(`/api/orders/${orderId}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` },
-        });
-        fetchOrders();
+        // Optimistic update
+        const previousOrders = [...orders];
+        setOrders(prev => prev.filter(o => o.id !== orderId));
+        try {
+            const res = await fetch(`/api/orders/${orderId}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error('Failed');
+        } catch {
+            setOrders(previousOrders); // Revert on error
+        }
     };
 
     const handleDeleteAllOrders = async () => {

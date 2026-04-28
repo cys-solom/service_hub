@@ -20,6 +20,7 @@ export async function GET(
             ...product,
             images: JSON.parse(product.images),
             features: JSON.parse(product.features),
+            featuresAr: product.featuresAr ? JSON.parse(product.featuresAr) : [],
         });
     } catch {
         return NextResponse.json({ error: 'Failed to fetch product' }, { status: 500 });

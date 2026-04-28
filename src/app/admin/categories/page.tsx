@@ -60,11 +60,18 @@ export default function AdminCategoriesPage() {
 
     const handleDelete = async (id: string) => {
         if (!confirm('Delete this category? Products in this category will be affected.')) return;
-        await fetch(`/api/categories/${id}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` },
-        });
-        fetchCategories();
+        // Optimistic update
+        const previousCategories = [...categories];
+        setCategories(prev => prev.filter(c => c.id !== id));
+        try {
+            const res = await fetch(`/api/categories/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error('Failed');
+        } catch {
+            setCategories(previousCategories);
+        }
     };
 
     return (

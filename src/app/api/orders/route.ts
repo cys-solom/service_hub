@@ -36,6 +36,14 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const parsedTotalPrice = parseFloat(totalPrice);
+        if (isNaN(parsedTotalPrice) || parsedTotalPrice < 0) {
+            return NextResponse.json(
+                { error: 'Invalid total price' },
+                { status: 400 }
+            );
+        }
+
         const orderCode = generateOrderCode();
 
         const order = await prisma.order.create({
@@ -45,7 +53,7 @@ export async function POST(request: NextRequest) {
                 customerPhone,
                 customerEmail,
                 items: JSON.stringify(items),
-                totalPrice: parseFloat(totalPrice),
+                totalPrice: parsedTotalPrice,
                 status: 'SentToWhatsApp',
                 notes,
             },
@@ -58,6 +66,18 @@ export async function POST(request: NextRequest) {
                     where: { id: item.productId },
                     data: { orderCount: { increment: item.quantity || 1 } },
                 }).catch(() => { });
+            }
+        }
+
+        // Increment coupon usage count if coupon was used
+        if (body.couponCode) {
+            try {
+                await prisma.coupon.update({
+                    where: { code: body.couponCode.toUpperCase().trim() },
+                    data: { usedCount: { increment: 1 } },
+                });
+            } catch (couponErr) {
+                console.error('Failed to update coupon usage:', couponErr);
             }
         }
 

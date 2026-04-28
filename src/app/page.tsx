@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import AnimatedLogo from '@/components/AnimatedLogo';
+import OptimizedImage from '@/components/OptimizedImage';
 import {
   ArrowRight,
   Sparkles,
@@ -172,62 +173,82 @@ export default function HomePage() {
               ? featured.map((product) => (
                 <motion.div key={product.id} variants={fadeInUp}>
                   <Link href={`/product/${product.slug}`}>
-                    <div className={`group rounded-2xl border ${product.outOfStock ? 'border-red-200/50 dark:border-red-800/30' : 'border-gray-200 dark:border-gray-800'} bg-white dark:bg-gray-900/50 p-6 card-hover h-full relative overflow-hidden`}>
-                      {/* Out of Stock Overlay */}
-                      {product.outOfStock && (
-                        <div className="absolute inset-0 bg-gray-900/5 dark:bg-black/20 z-10 pointer-events-none" />
-                      )}
-
-                      {/* Out of Stock Badge */}
-                      {product.outOfStock && (
-                        <div className="absolute top-3 end-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/90 dark:bg-red-600/90 text-white text-[11px] font-bold shadow-lg shadow-red-500/20 backdrop-blur-sm">
-                          <Ban className="w-3 h-3" />
-                          <span>غير متاح حالياً</span>
-                        </div>
-                      )}
-
-                      <div className={`flex items-center gap-4 mb-4 ${product.outOfStock ? 'opacity-60' : ''}`}>
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center overflow-hidden">
-                          {product.images?.[0] ? (
-                            <img
-                              src={product.images[0]}
-                              alt={product.name}
-                              className="w-10 h-10 object-contain"
-                            />
-                          ) : (
-                            <Package className="w-7 h-7 text-violet-500" />
-                          )}
-                        </div>
-                        <div>
-                          <h3 className={`font-semibold ${product.outOfStock ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400'} transition-colors`}>
-                            {product.name}
-                          </h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {product.category?.name}
-                          </p>
-                        </div>
+                    <div className={`group rounded-2xl border ${product.outOfStock ? 'border-red-200/50 dark:border-red-800/30' : 'border-gray-200/80 dark:border-gray-800/80 hover:border-violet-300 dark:hover:border-violet-500/40'} bg-white dark:bg-gray-900/60 card-hover h-full flex flex-col relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-violet-500/5`}>
+                      {/* Top image section */}
+                      <div className={`relative h-40 bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-500/5 dark:to-indigo-500/5 flex items-center justify-center overflow-hidden ${product.outOfStock ? 'opacity-50' : ''}`}>
+                        {product.images?.[0] ? (
+                          <OptimizedImage
+                            src={product.images[0]}
+                            alt={product.name}
+                            width={120}
+                            height={120}
+                            className="w-28 h-28 object-contain group-hover:scale-110 transition-transform duration-500"
+                          />
+                        ) : (
+                          <Package className="w-16 h-16 text-violet-400/60" />
+                        )}
+                        {/* Out of Stock Badge */}
+                        {product.outOfStock && (
+                          <div className="absolute top-3 end-3 z-20 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/90 text-white text-[10px] font-bold backdrop-blur-sm">
+                            <Ban className="w-3 h-3" />
+                            {t.productsPage.unavailable}
+                          </div>
+                        )}
+                        {/* Bestseller badge */}
+                        {!product.outOfStock && (product.orderCount || 0) >= 10 && (
+                          <div className="absolute top-3 start-3 z-20 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/90 text-white text-[10px] font-bold backdrop-blur-sm">
+                            <Star className="w-3 h-3 fill-current" />
+                            {locale === 'ar' ? 'الأكثر مبيعاً' : 'Bestseller'}
+                          </div>
+                        )}
+                        {/* Warranty badge */}
+                        {(product.fullWarranty || product.variants?.some(v => v.warrantyDays > 0)) && (
+                          <div className="absolute bottom-3 end-3 flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/90 text-white text-[10px] font-bold backdrop-blur-sm">
+                            <Shield className="w-3 h-3" />
+                            {product.fullWarranty ? (locale === 'ar' ? 'ضمان كامل' : 'Full Warranty') : (locale === 'ar' ? 'ضمان' : 'Warranty')}
+                          </div>
+                        )}
+                        {/* Hover gradient overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-white/60 dark:from-gray-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       </div>
 
-                      <p className={`text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2 ${product.outOfStock ? 'opacity-60' : ''}`}>
-                        {product.description}
-                      </p>
+                      {/* Content section */}
+                      <div className="p-5 flex flex-col flex-1">
+                        <h3 className={`font-bold text-base mb-1 ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400'} transition-colors line-clamp-1`}>
+                          {locale === 'ar' && product.nameAr ? product.nameAr : product.name}
+                        </h3>
 
-                      <div className={`flex items-end justify-between ${product.outOfStock ? 'opacity-60' : ''}`}>
-                        <div>
-                          <span className="text-sm text-gray-400">{t.featured.from}</span>
-                          <p className={`text-2xl font-bold ${product.outOfStock ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
-                            {product.discount > 0
-                              ? (product.basePrice - product.discount).toFixed(0)
-                              : product.basePrice} {currencySymbol}
-                            {product.durationLabel && (
-                              <span className="text-sm font-normal text-gray-400">/{product.durationLabel}</span>
-                            )}
+                        {product.variants?.length > 1 && (
+                          <p className="text-[11px] text-violet-500 dark:text-violet-400 font-medium mb-3">
+                            {product.variants.length} {locale === 'ar' ? 'باقات متاحة' : 'plans available'}
                           </p>
-                        </div>
+                        )}
 
-                        <div className="flex items-center gap-1 text-amber-500">
-                          <Star className="w-4 h-4 fill-current" />
-                          <span className="text-sm font-medium">4.9</span>
+                        <div className={`flex items-end justify-between mt-auto pt-3 border-t border-gray-100 dark:border-gray-800/50 ${product.outOfStock ? 'opacity-50' : ''}`}>
+                          <div>
+                            <span className="text-[11px] text-gray-400">{t.featured.from}</span>
+                            {product.discount > 0 && (
+                              <span className="text-[11px] text-red-400 font-medium line-through ms-2">
+                                {product.basePrice} {currencySymbol}
+                              </span>
+                            )}
+                            <div className="flex items-baseline gap-1">
+                              <span className={`text-xl font-extrabold ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white'}`}>
+                                {product.discount > 0
+                                  ? (product.basePrice - product.discount).toFixed(0)
+                                  : product.basePrice}
+                              </span>
+                              <span className="text-xs text-gray-400 font-medium">{currencySymbol}</span>
+                              {product.durationLabel && (
+                                <span className="text-xs text-gray-400">/{product.durationLabel}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-500/10">
+                            <Star className="w-3 h-3 text-amber-500 fill-current" />
+                            <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">4.9</span>
+                          </div>
                         </div>
                       </div>
                     </div>
