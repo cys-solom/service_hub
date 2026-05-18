@@ -173,9 +173,9 @@ export default function HomePage() {
               ? featured.map((product) => (
                 <motion.div key={product.id} variants={fadeInUp}>
                   <Link href={`/product/${product.slug}`}>
-                    <div className={`group flex items-start gap-5 p-5 rounded-2xl transition-all duration-300 hover:shadow-lg ${product.outOfStock ? 'opacity-60' : ''} bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-violet-300 dark:hover:border-violet-600/50`}>
+                    <div className={`group flex items-start gap-5 p-5 rounded-2xl transition-all duration-300 hover:shadow-lg ${product.outOfStock ? 'opacity-60' : ''} bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600/50 hover:border-violet-300 dark:hover:border-violet-500/60`}>
                       {/* Logo */}
-                      <div className={`shrink-0 w-[72px] h-[72px] rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center p-3 ${product.outOfStock ? 'grayscale' : ''}`}>
+                      <div className={`shrink-0 w-[72px] h-[72px] rounded-2xl bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 flex items-center justify-center p-3 ${product.outOfStock ? 'grayscale' : ''}`}>
                         {product.images?.[0] ? (
                           <OptimizedImage
                             src={product.images[0]}
