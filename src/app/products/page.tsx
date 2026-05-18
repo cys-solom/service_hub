@@ -290,45 +290,44 @@ function ProductsContent() {
                                         }}
                                     >
                                         <Link href={`/product/${product.slug}`}>
-                                            <div className={`group relative rounded-2xl h-full flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1 ${product.outOfStock ? 'opacity-60 grayscale' : ''} bg-white/80 dark:bg-white/[0.03] border border-gray-200/70 dark:border-white/[0.06] hover:border-violet-300/50 dark:hover:border-violet-500/20 backdrop-blur-sm hover:shadow-xl hover:shadow-violet-500/5 dark:hover:shadow-violet-500/10`}>
-                                                {/* Hover glow effect */}
-                                                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-gradient-to-br from-violet-500/[0.03] via-transparent to-indigo-500/[0.03]" />
+                                            <div className={`group relative rounded-2xl h-full flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-violet-500/15 dark:hover:shadow-violet-500/20 ${product.outOfStock ? 'opacity-60' : ''} bg-white dark:bg-[#0d0f17] border border-gray-200 dark:border-gray-800 hover:border-violet-400/60 dark:hover:border-violet-500/40`}>
+                                                {/* Gradient border glow on hover */}
+                                                <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-br from-violet-500/0 via-indigo-500/0 to-purple-500/0 group-hover:from-violet-500/20 group-hover:via-indigo-500/10 group-hover:to-purple-500/20 transition-all duration-500 pointer-events-none -z-10" />
 
-                                                {/* Logo Section */}
-                                                <div className="relative flex items-center justify-center py-8 px-6">
+                                                {/* Logo Area */}
+                                                <div className={`relative flex items-center justify-center py-10 ${product.outOfStock ? 'grayscale' : ''}`}>
+                                                    {/* Background glow circle */}
+                                                    <div className="absolute w-32 h-32 rounded-full bg-violet-500/8 dark:bg-violet-500/5 blur-2xl" />
+                                                    
                                                     {product.images?.[0] ? (
-                                                        <div className="relative">
-                                                            {/* Subtle glow behind logo */}
-                                                            <div className="absolute inset-0 bg-violet-500/10 dark:bg-violet-500/5 rounded-full blur-2xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                                            <OptimizedImage
-                                                                src={product.images[0]}
-                                                                alt={product.name}
-                                                                width={200}
-                                                                height={200}
-                                                                className="relative w-20 h-20 object-contain group-hover:scale-110 transition-transform duration-500"
-                                                            />
-                                                        </div>
+                                                        <OptimizedImage
+                                                            src={product.images[0]}
+                                                            alt={product.name}
+                                                            width={200}
+                                                            height={200}
+                                                            className="relative w-20 h-20 object-contain drop-shadow-lg group-hover:scale-110 transition-transform duration-500"
+                                                        />
                                                     ) : (
-                                                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center">
-                                                            <Package className="w-10 h-10 text-violet-400/50" />
+                                                        <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-500/15 to-indigo-500/15 flex items-center justify-center">
+                                                            <Package className="w-10 h-10 text-violet-400/60" />
                                                         </div>
                                                     )}
 
                                                     {/* Badges */}
                                                     {product.outOfStock && (
-                                                        <div className="absolute top-3 end-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500/90 text-white text-[10px] font-bold backdrop-blur-sm">
+                                                        <div className="absolute top-3 end-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500 text-white text-[10px] font-bold shadow-lg">
                                                             <Ban className="w-3 h-3" />
                                                             {t.productsPage.unavailable}
                                                         </div>
                                                     )}
                                                     {!product.outOfStock && (product.orderCount || 0) >= 10 && (
-                                                        <div className="absolute top-3 start-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/90 text-white text-[10px] font-bold backdrop-blur-sm">
+                                                        <div className="absolute top-3 start-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold shadow-lg">
                                                             <Star className="w-3 h-3 fill-current" />
                                                             {locale === 'ar' ? 'الأكثر مبيعاً' : 'Bestseller'}
                                                         </div>
                                                     )}
                                                     {(product.fullWarranty || product.variants?.some(v => v.warrantyDays > 0)) && (
-                                                        <div className="absolute top-3 end-3 flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/80 text-white text-[10px] font-bold backdrop-blur-sm">
+                                                        <div className="absolute top-3 end-3 flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-green-500 text-white text-[10px] font-bold shadow-lg">
                                                             <Shield className="w-3 h-3" />
                                                             {product.fullWarranty ? (locale === 'ar' ? 'ضمان كامل' : 'Full Warranty') : (locale === 'ar' ? 'ضمان' : 'Warranty')}
                                                         </div>
@@ -337,17 +336,17 @@ function ProductsContent() {
 
                                                 {/* Content */}
                                                 <div className="px-5 pb-5 flex flex-col flex-1">
-                                                    <h3 className={`font-bold text-[15px] leading-snug mb-1 text-center ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400'} transition-colors line-clamp-1`}>
+                                                    <h3 className={`font-bold text-base text-center mb-1 ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400'} transition-colors line-clamp-1`}>
                                                         {locale === 'ar' && product.nameAr ? product.nameAr : product.name}
                                                     </h3>
 
                                                     {product.variants?.length > 1 && (
-                                                        <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium text-center mb-3">
+                                                        <p className="text-xs text-gray-400 dark:text-gray-500 text-center mb-3">
                                                             {product.variants.length} {locale === 'ar' ? 'باقات متاحة' : 'plans available'}
                                                         </p>
                                                     )}
 
-                                                    <div className={`flex items-center justify-between mt-auto pt-3 border-t border-gray-100 dark:border-white/[0.05] ${product.outOfStock ? 'opacity-40' : ''}`}>
+                                                    <div className={`flex items-center justify-between mt-auto pt-3 border-t border-gray-100 dark:border-gray-800 ${product.outOfStock ? 'opacity-40' : ''}`}>
                                                         <div>
                                                             {product.discount > 0 && (
                                                                 <span className="text-[11px] text-red-400 font-medium line-through block">
@@ -355,7 +354,7 @@ function ProductsContent() {
                                                                 </span>
                                                             )}
                                                             <div className="flex items-baseline gap-1">
-                                                                <span className={`text-xl font-extrabold ${product.outOfStock ? 'text-gray-400' : 'bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 bg-clip-text text-transparent'}`}>
+                                                                <span className={`text-xl font-extrabold ${product.outOfStock ? 'text-gray-400' : 'text-violet-600 dark:text-violet-400'}`}>
                                                                     {product.discount > 0
                                                                         ? (product.basePrice - product.discount).toFixed(0)
                                                                         : product.basePrice}
@@ -364,9 +363,10 @@ function ProductsContent() {
                                                             </div>
                                                         </div>
 
-                                                        <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-100 dark:border-violet-500/10">
-                                                            <Star className="w-3 h-3 text-violet-500 dark:text-violet-400 fill-current" />
-                                                            <span className="text-[11px] font-bold text-violet-600 dark:text-violet-400">4.9</span>
+                                                        <div className="w-8 h-8 rounded-full bg-violet-500 dark:bg-violet-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-violet-500/25">
+                                                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                                            </svg>
                                                         </div>
                                                     </div>
                                                 </div>

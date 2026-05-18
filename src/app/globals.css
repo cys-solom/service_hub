@@ -14,75 +14,96 @@
 }
 
 /* ====== Animated Background ====== */
-@keyframes bg-orbit {
-  0% { transform: translate(0%, 0%) scale(1); }
-  25% { transform: translate(10%, -15%) scale(1.1); }
-  50% { transform: translate(-5%, 10%) scale(0.95); }
-  75% { transform: translate(-10%, -5%) scale(1.05); }
-  100% { transform: translate(0%, 0%) scale(1); }
+@keyframes orb-float-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  20% { transform: translate(80px, -120px) scale(1.15); }
+  40% { transform: translate(-60px, 60px) scale(0.9); }
+  60% { transform: translate(100px, 80px) scale(1.1); }
+  80% { transform: translate(-80px, -40px) scale(0.95); }
 }
 
-@keyframes bg-orbit-reverse {
-  0% { transform: translate(0%, 0%) scale(1); }
-  25% { transform: translate(-12%, 10%) scale(1.08); }
-  50% { transform: translate(8%, -8%) scale(0.92); }
-  75% { transform: translate(5%, 12%) scale(1.05); }
-  100% { transform: translate(0%, 0%) scale(1); }
+@keyframes orb-float-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(-100px, 80px) scale(1.2); }
+  50% { transform: translate(60px, -100px) scale(0.85); }
+  75% { transform: translate(-40px, -60px) scale(1.1); }
+}
+
+@keyframes orb-float-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  30% { transform: translate(70px, 100px) scale(1.1); }
+  60% { transform: translate(-90px, -50px) scale(0.9); }
+}
+
+@keyframes orb-pulse {
+  0%, 100% { opacity: var(--orb-opacity-min); }
+  50% { opacity: var(--orb-opacity-max); }
 }
 
 .animated-bg {
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   overflow: hidden;
+  pointer-events: none;
   background: var(--background);
 }
 
-.animated-bg::before,
-.animated-bg::after {
-  content: '';
+/* Orb 1 - Top Left - Violet */
+.animated-bg-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.12;
+  will-change: transform;
 }
 
-.animated-bg::before {
-  width: 600px;
-  height: 600px;
-  top: -10%;
-  left: -5%;
-  background: radial-gradient(circle, #7c3aed 0%, #4f46e5 50%, transparent 70%);
-  animation: bg-orbit 25s ease-in-out infinite;
+.animated-bg-orb--1 {
+  width: 800px;
+  height: 800px;
+  top: -20%;
+  left: -15%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.35) 0%, rgba(79, 70, 229, 0.15) 40%, transparent 70%);
+  filter: blur(80px);
+  animation: orb-float-1 18s ease-in-out infinite, orb-pulse 8s ease-in-out infinite;
+  --orb-opacity-min: 0.6;
+  --orb-opacity-max: 1;
 }
 
-.animated-bg::after {
+/* Orb 2 - Bottom Right - Indigo */
+.animated-bg-orb--2 {
+  width: 700px;
+  height: 700px;
+  bottom: -25%;
+  right: -10%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, rgba(139, 92, 246, 0.1) 40%, transparent 70%);
+  filter: blur(90px);
+  animation: orb-float-2 22s ease-in-out infinite, orb-pulse 10s ease-in-out infinite 3s;
+  --orb-opacity-min: 0.5;
+  --orb-opacity-max: 0.9;
+}
+
+/* Orb 3 - Center - Purple */
+.animated-bg-orb--3 {
   width: 500px;
   height: 500px;
-  bottom: -10%;
-  right: -5%;
-  background: radial-gradient(circle, #6366f1 0%, #8b5cf6 50%, transparent 70%);
-  animation: bg-orbit-reverse 30s ease-in-out infinite;
-}
-
-.dark .animated-bg::before { opacity: 0.08; }
-.dark .animated-bg::after { opacity: 0.06; }
-
-/* Third orb via extra element in layout */
-.animated-bg-orb3 {
-  position: absolute;
-  width: 400px;
-  height: 400px;
-  top: 40%;
-  left: 50%;
-  border-radius: 50%;
+  top: 30%;
+  left: 40%;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.25) 0%, rgba(124, 58, 237, 0.08) 40%, transparent 70%);
   filter: blur(100px);
-  background: radial-gradient(circle, #a78bfa 0%, #7c3aed 50%, transparent 70%);
-  opacity: 0.08;
-  animation: bg-orbit 20s ease-in-out infinite reverse;
+  animation: orb-float-3 15s ease-in-out infinite, orb-pulse 6s ease-in-out infinite 1s;
+  --orb-opacity-min: 0.4;
+  --orb-opacity-max: 0.8;
 }
 
-.dark .animated-bg-orb3 { opacity: 0.05; }
+/* Dark mode - more visible orbs */
+.dark .animated-bg-orb--1 {
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.25) 0%, rgba(79, 70, 229, 0.1) 40%, transparent 70%);
+}
+.dark .animated-bg-orb--2 {
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.08) 40%, transparent 70%);
+}
+.dark .animated-bg-orb--3 {
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.15) 0%, rgba(124, 58, 237, 0.05) 40%, transparent 70%);
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -96,11 +117,12 @@ html {
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  position: relative;
+  z-index: 1;
 }
 
 /* Custom scrollbar */
