@@ -52,6 +52,7 @@ model ProductVariant {
   duration     String
   price        Float
   warrantyDays Int      @default(0)
+  displayOrder Int      @default(0)
   isActive     Boolean  @default(true)
   outOfStock   Boolean  @default(false)
   createdAt    DateTime @default(now())

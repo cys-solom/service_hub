@@ -9,7 +9,7 @@ export async function GET(
         const { slug } = await params;
         const product = await prisma.product.findUnique({
             where: { slug },
-            include: { category: true, variants: { where: { isActive: true } } },
+            include: { category: true, variants: { where: { isActive: true }, orderBy: { displayOrder: 'asc' } } },
         });
 
         if (!product || !product.isActive) {

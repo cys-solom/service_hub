@@ -5,7 +5,7 @@ import { authenticateRequest } from '@/lib/auth';
 export async function GET() {
     try {
         const products = await prisma.product.findMany({
-            include: { category: true, variants: true },
+            include: { category: true, variants: { orderBy: { displayOrder: 'asc' } } },
             orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
         });
         // Auto-fix negative/zero displayOrder values
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
                     }))
                 } : undefined,
             },
-            include: { category: true, variants: true },
+            include: { category: true, variants: { orderBy: { displayOrder: 'asc' } } },
         });
 
         return NextResponse.json({

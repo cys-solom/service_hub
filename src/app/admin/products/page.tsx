@@ -20,6 +20,9 @@ import {
     Link,
     ArrowUp,
     ArrowDown,
+    GripVertical,
+    ChevronUp,
+    ChevronDown,
 } from 'lucide-react';
 import { useSettings } from '@/lib/settings-context';
 
@@ -323,6 +326,25 @@ export default function AdminProductsPage() {
             headers: { Authorization: `Bearer ${token}` },
         });
         fetchData();
+    };
+
+    const handleReorderVariant = async (productId: string, variantId: string, direction: 'up' | 'down') => {
+        const product = products.find(p => p.id === productId);
+        if (!product?.variants) return;
+        const variants = [...product.variants];
+        const idx = variants.findIndex(v => v.id === variantId);
+        const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+        if (swapIdx < 0 || swapIdx >= variants.length) return;
+        // Swap
+        [variants[idx], variants[swapIdx]] = [variants[swapIdx], variants[idx]];
+        // Optimistic update
+        setProducts(prev => prev.map(p => p.id === productId ? { ...p, variants } : p));
+        // Save to server
+        await fetch('/api/variants/reorder', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ orderedIds: variants.map(v => v.id) }),
+        }).catch(() => fetchData());
     };
 
     const addFormVariant = () => {
@@ -1033,33 +1055,56 @@ export default function AdminProductsPage() {
                                     </button>
                                 </div>
 
-                                <div className="flex flex-wrap gap-2">
-                                    {product.variants?.map((v) => (
+                                <div className="space-y-1.5">
+                                    {product.variants?.map((v, vIdx) => (
                                         <div
                                             key={v.id}
-                                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm ${v.outOfStock ? 'bg-red-50 dark:bg-red-500/5 border border-red-200 dark:border-red-800' : 'bg-gray-50 dark:bg-gray-800/50'}`}
+                                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${v.outOfStock ? 'bg-red-50 dark:bg-red-500/5 border border-red-200 dark:border-red-800' : 'bg-gray-50 dark:bg-gray-800/50'}`}
                                         >
-                                            <span className={`${v.outOfStock ? 'text-red-400 line-through' : 'text-gray-700 dark:text-gray-300'}`}>{v.title}</span>
-                                            <span className="text-gray-400">·</span>
+                                            {/* Reorder controls */}
+                                            <div className="flex flex-col gap-0 shrink-0">
+                                                <button
+                                                    onClick={() => handleReorderVariant(product.id, v.id, 'up')}
+                                                    disabled={vIdx === 0}
+                                                    className={`p-0.5 rounded transition ${vIdx === 0 ? 'text-gray-200 dark:text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-500/10'}`}
+                                                    title="Move up"
+                                                >
+                                                    <ChevronUp className="w-3 h-3" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleReorderVariant(product.id, v.id, 'down')}
+                                                    disabled={vIdx === (product.variants?.length || 0) - 1}
+                                                    className={`p-0.5 rounded transition ${vIdx === (product.variants?.length || 0) - 1 ? 'text-gray-200 dark:text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-500/10'}`}
+                                                    title="Move down"
+                                                >
+                                                    <ChevronDown className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                            <GripVertical className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600 shrink-0" />
+                                            <span className="text-xs text-gray-400 font-mono w-5 shrink-0">{vIdx + 1}.</span>
+                                            <span className={`${v.outOfStock ? 'text-red-400 line-through' : 'text-gray-700 dark:text-gray-300'} font-medium`}>{v.title}</span>
+                                            <span className="text-gray-300 dark:text-gray-600">·</span>
                                             <span className="text-xs text-gray-400">{v.duration}</span>
-                                            <span className="text-gray-400">·</span>
-                                            <span className={`font-medium ${v.outOfStock ? 'text-red-400 line-through' : 'text-violet-600 dark:text-violet-400'}`}>{v.price} {currencySymbol}</span>
+                                            <span className="text-gray-300 dark:text-gray-600">·</span>
+                                            <span className={`font-semibold ${v.outOfStock ? 'text-red-400 line-through' : 'text-violet-600 dark:text-violet-400'}`}>{v.price} {currencySymbol}</span>
                                             {v.outOfStock && (
                                                 <span className="text-[10px] font-bold text-red-500 uppercase">Out of Stock</span>
                                             )}
-                                            <button
-                                                onClick={() => handleToggleVariantOutOfStock(v.id, v.outOfStock)}
-                                                className={`ml-1 ${v.outOfStock ? 'text-emerald-500 hover:text-emerald-600' : 'text-amber-400 hover:text-amber-500'}`}
-                                                title={v.outOfStock ? 'Mark In Stock' : 'Mark Out of Stock'}
-                                            >
-                                                <Ban className="w-3 h-3" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteVariant(v.id)}
-                                                className="ml-1 text-red-400 hover:text-red-500"
-                                            >
-                                                <X className="w-3 h-3" />
-                                            </button>
+                                            <div className="ml-auto flex items-center gap-1 shrink-0">
+                                                <button
+                                                    onClick={() => handleToggleVariantOutOfStock(v.id, v.outOfStock)}
+                                                    className={`p-1 rounded ${v.outOfStock ? 'text-emerald-500 hover:text-emerald-600' : 'text-amber-400 hover:text-amber-500'}`}
+                                                    title={v.outOfStock ? 'Mark In Stock' : 'Mark Out of Stock'}
+                                                >
+                                                    <Ban className="w-3 h-3" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteVariant(v.id)}
+                                                    className="p-1 text-red-400 hover:text-red-500"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                     {(!product.variants || product.variants.length === 0) && (
