@@ -277,20 +277,11 @@ function ProductsContent() {
                                 </p>
                             </div>
                         ) : (
-                            <motion.div
-                                initial="initial"
-                                animate="animate"
-                                variants={{ animate: { transition: { staggerChildren: 0.05 } } }}
-                                className="flex flex-col gap-3"
-                            >
+                            <div className="flex flex-col gap-3">
                                 {filtered.map((product) => (
-                                    <motion.div
+                                    <div
                                         key={product.id}
-                                        variants={{
-                                            initial: { opacity: 0, y: 20 },
-                                            animate: { opacity: 1, y: 0 },
-                                        }}
-                                    >
+
                                         <Link href={`/product/${product.slug}`}>
                                             <div className={`group flex items-start gap-5 p-5 rounded-2xl transition-all duration-300 hover:shadow-lg ${product.outOfStock ? 'opacity-60' : ''} bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600/50 hover:border-violet-300 dark:hover:border-violet-500/60`}>
                                                 {/* Logo */}
@@ -345,9 +336,9 @@ function ProductsContent() {
                                                 </div>
                                             </div>
                                         </Link>
-                                    </motion.div>
+                                    </div>
                                 ))}
-                            </motion.div>
+                            </div>
                         )}
                     </div>
                 </div>
