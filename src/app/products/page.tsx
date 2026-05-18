@@ -290,98 +290,78 @@ function ProductsContent() {
                                         }}
                                     >
                                         <Link href={`/product/${product.slug}`}>
-                                            <div className={`group rounded-2xl border ${product.outOfStock ? 'border-red-200/50 dark:border-red-800/30 opacity-75' : 'border-gray-200/60 dark:border-gray-800/60 hover:border-violet-400/50 dark:hover:border-violet-500/30'} bg-white dark:bg-gray-900/70 h-full flex flex-col relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-violet-500/10 hover:-translate-y-1`}>
-                                                {/* Logo / Image Section */}
-                                                <div className={`relative h-44 flex items-center justify-center overflow-hidden ${product.outOfStock ? 'grayscale' : ''}`}>
-                                                    {/* Background pattern */}
-                                                    <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-violet-50/50 to-indigo-50/50 dark:from-gray-800/50 dark:via-violet-900/10 dark:to-indigo-900/10" />
-                                                    <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)', backgroundSize: '24px 24px' }} />
-                                                    
-                                                    {/* Logo */}
+                                            <div className={`group rounded-2xl border ${product.outOfStock ? 'border-red-200/50 dark:border-red-800/30 opacity-75' : 'border-gray-200/60 dark:border-gray-800/60 hover:border-violet-300 dark:hover:border-violet-500/40'} bg-white dark:bg-gray-900/70 h-full flex flex-col relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-violet-500/8 hover:-translate-y-0.5`}>
+                                                {/* Image Section */}
+                                                <div className={`relative h-36 bg-gradient-to-br from-violet-50/80 to-indigo-50/60 dark:from-violet-500/5 dark:to-indigo-500/5 flex items-center justify-center overflow-hidden ${product.outOfStock ? 'grayscale opacity-60' : ''}`}>
                                                     {product.images?.[0] ? (
-                                                        <div className="relative z-10 w-20 h-20 flex items-center justify-center rounded-2xl bg-white dark:bg-gray-800/80 shadow-lg shadow-black/5 dark:shadow-black/20 p-3 group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-violet-500/10 transition-all duration-500">
-                                                            <OptimizedImage
-                                                                src={product.images[0]}
-                                                                alt={product.name}
-                                                                width={80}
-                                                                height={80}
-                                                                className="w-full h-full object-contain"
-                                                            />
-                                                        </div>
+                                                        <OptimizedImage
+                                                            src={product.images[0]}
+                                                            alt={product.name}
+                                                            width={100}
+                                                            height={100}
+                                                            className="w-16 h-16 object-contain group-hover:scale-105 transition-transform duration-300"
+                                                        />
                                                     ) : (
-                                                        <div className="relative z-10 w-20 h-20 flex items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-500/20 dark:to-indigo-500/20">
-                                                            <Package className="w-10 h-10 text-violet-400/70" />
-                                                        </div>
+                                                        <Package className="w-12 h-12 text-violet-300 dark:text-violet-500/40" />
                                                     )}
 
                                                     {/* Badges */}
                                                     {product.outOfStock && (
-                                                        <div className="absolute top-3 end-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/90 text-white text-[10px] font-bold backdrop-blur-md shadow-lg">
+                                                        <div className="absolute top-3 end-3 z-20 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/90 text-white text-[10px] font-bold backdrop-blur-sm">
                                                             <Ban className="w-3 h-3" />
                                                             {t.productsPage.unavailable}
                                                         </div>
                                                     )}
                                                     {!product.outOfStock && (product.orderCount || 0) >= 10 && (
-                                                        <div className="absolute top-3 start-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/90 text-white text-[10px] font-bold backdrop-blur-md shadow-lg">
+                                                        <div className="absolute top-3 start-3 z-20 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/90 text-white text-[10px] font-bold backdrop-blur-sm">
                                                             <Star className="w-3 h-3 fill-current" />
                                                             {locale === 'ar' ? 'الأكثر مبيعاً' : 'Bestseller'}
                                                         </div>
                                                     )}
                                                     {(product.fullWarranty || product.variants?.some(v => v.warrantyDays > 0)) && (
-                                                        <div className="absolute bottom-3 end-3 z-20 flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/90 text-white text-[10px] font-bold backdrop-blur-md shadow-lg">
+                                                        <div className="absolute bottom-3 end-3 z-20 flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/90 text-white text-[10px] font-bold backdrop-blur-sm">
                                                             <Shield className="w-3 h-3" />
                                                             {product.fullWarranty ? (locale === 'ar' ? 'ضمان كامل' : 'Full Warranty') : (locale === 'ar' ? 'ضمان' : 'Warranty')}
                                                         </div>
                                                     )}
-
-                                                    {/* Hover glow */}
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                                 </div>
 
                                                 {/* Content */}
                                                 <div className="p-5 flex flex-col flex-1">
-                                                    {/* Product name */}
-                                                    <h3 className={`font-bold text-[15px] leading-snug mb-1.5 ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400'} transition-colors duration-300 line-clamp-1`}>
+                                                    <h3 className={`font-bold text-[15px] leading-snug mb-1 ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400'} transition-colors line-clamp-1`}>
                                                         {locale === 'ar' && product.nameAr ? product.nameAr : product.name}
                                                     </h3>
 
-                                                    {/* Plans count */}
                                                     {product.variants?.length > 1 && (
-                                                        <p className="text-[11px] text-violet-500/80 dark:text-violet-400/80 font-medium mb-2">
+                                                        <p className="text-[11px] text-violet-500 dark:text-violet-400 font-medium mb-2">
                                                             {product.variants.length} {locale === 'ar' ? 'باقات متاحة' : 'plans available'}
                                                         </p>
                                                     )}
 
-                                                    {/* Price section */}
-                                                    <div className={`flex items-end justify-between mt-auto pt-3 border-t border-gray-100 dark:border-gray-800/40 ${product.outOfStock ? 'opacity-40' : ''}`}>
+                                                    <div className={`flex items-end justify-between mt-auto pt-3 border-t border-gray-100 dark:border-gray-800/50 ${product.outOfStock ? 'opacity-40' : ''}`}>
                                                         <div>
                                                             {product.discount > 0 && (
-                                                                <span className="text-[11px] text-red-400 font-medium line-through block mb-0.5">
+                                                                <span className="text-[11px] text-red-400 font-medium line-through block">
                                                                     {product.basePrice} {currencySymbol}
                                                                 </span>
                                                             )}
-                                                            <div className="flex items-baseline gap-1.5">
-                                                                <span className={`text-2xl font-extrabold tracking-tight ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white'}`}>
+                                                            <div className="flex items-baseline gap-1">
+                                                                <span className={`text-xl font-extrabold ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white'}`}>
                                                                     {product.discount > 0
                                                                         ? (product.basePrice - product.discount).toFixed(0)
                                                                         : product.basePrice}
                                                                 </span>
-                                                                <span className="text-xs text-gray-400 font-semibold">{currencySymbol}</span>
+                                                                <span className="text-xs text-gray-400 font-medium">{currencySymbol}</span>
+                                                                {product.durationLabel && (
+                                                                    <span className="text-[11px] text-gray-400 font-medium">/ {product.durationLabel}</span>
+                                                                )}
                                                             </div>
                                                         </div>
 
-                                                        {/* Duration badge */}
-                                                        {product.durationLabel ? (
-                                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-500/10 text-[11px] font-semibold text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-500/20">
-                                                                <Clock className="w-3 h-3" />
-                                                                {product.durationLabel}
-                                                            </span>
-                                                        ) : (
-                                                            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 dark:bg-amber-500/10">
-                                                                <Star className="w-3 h-3 text-amber-500 fill-current" />
-                                                                <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">4.9</span>
-                                                            </div>
-                                                        )}
+                                                        <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-500/10">
+                                                            <Star className="w-3 h-3 text-amber-500 fill-current" />
+                                                            <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">4.9</span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
