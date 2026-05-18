@@ -279,7 +279,7 @@ function ProductsContent() {
                                 initial="initial"
                                 animate="animate"
                                 variants={{ animate: { transition: { staggerChildren: 0.05 } } }}
-                                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                                className="flex flex-col gap-3"
                             >
                                 {filtered.map((product) => (
                                     <motion.div
@@ -290,52 +290,52 @@ function ProductsContent() {
                                         }}
                                     >
                                         <Link href={`/product/${product.slug}`}>
-                                            <div className={`group flex items-start gap-4 p-4 rounded-2xl transition-all duration-300 hover:shadow-lg ${product.outOfStock ? 'opacity-60' : ''} bg-gray-50/80 dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800/60 hover:border-gray-200 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/[0.05]`}>
+                                            <div className={`group flex items-start gap-5 p-5 rounded-2xl transition-all duration-300 hover:shadow-lg ${product.outOfStock ? 'opacity-60' : ''} bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-violet-300 dark:hover:border-violet-600/50`}>
                                                 {/* Logo */}
-                                                <div className={`shrink-0 w-16 h-16 rounded-xl bg-white dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/50 flex items-center justify-center p-2.5 ${product.outOfStock ? 'grayscale' : ''}`}>
+                                                <div className={`shrink-0 w-[72px] h-[72px] rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center p-3 ${product.outOfStock ? 'grayscale' : ''}`}>
                                                     {product.images?.[0] ? (
                                                         <OptimizedImage
                                                             src={product.images[0]}
                                                             alt={product.name}
-                                                            width={100}
-                                                            height={100}
+                                                            width={120}
+                                                            height={120}
                                                             className="w-full h-full object-contain"
                                                         />
                                                     ) : (
-                                                        <Package className="w-8 h-8 text-gray-300 dark:text-gray-600" />
+                                                        <Package className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                                                     )}
                                                 </div>
 
                                                 {/* Content */}
                                                 <div className="flex-1 min-w-0">
                                                     {/* Product name */}
-                                                    <h3 className={`font-bold text-base leading-snug mb-2 ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white'} line-clamp-2`}>
+                                                    <h3 className={`font-bold text-lg leading-snug mb-2.5 ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white'} line-clamp-2`}>
                                                         {locale === 'ar' && product.nameAr ? product.nameAr : product.name}
                                                     </h3>
 
                                                     {/* Tags */}
                                                     <div className="flex flex-wrap items-center gap-2">
                                                         {(product.fullWarranty || product.variants?.some(v => v.warrantyDays > 0)) && (
-                                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
-                                                                <Shield className="w-3 h-3" />
+                                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-xs font-semibold text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20">
+                                                                <Shield className="w-3.5 h-3.5" />
                                                                 {locale === 'ar' ? 'ضمان' : 'Warranty'}
                                                             </span>
                                                         )}
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 text-[11px] font-semibold text-blue-700 dark:text-blue-400">
-                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-500/15 text-xs font-semibold text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-500/20">
+                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
                                                             </svg>
                                                             {locale === 'ar' ? 'سياسة استرجاع' : 'Refund Policy'}
                                                         </span>
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-50 dark:bg-orange-500/10 text-[11px] font-semibold text-orange-700 dark:text-orange-400">
-                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 dark:bg-orange-500/15 text-xs font-semibold text-orange-700 dark:text-orange-400 border border-orange-100 dark:border-orange-500/20">
+                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                                 <path strokeLinecap="round" strokeLinejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
                                                             </svg>
                                                             {locale === 'ar' ? '60 دقيقة' : '60 min'}
                                                         </span>
                                                         {product.outOfStock && (
-                                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-500/10 text-[11px] font-semibold text-red-600 dark:text-red-400">
-                                                                <Ban className="w-3 h-3" />
+                                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 dark:bg-red-500/15 text-xs font-semibold text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/20">
+                                                                <Ban className="w-3.5 h-3.5" />
                                                                 {t.productsPage.unavailable}
                                                             </span>
                                                         )}
