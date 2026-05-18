@@ -61,7 +61,9 @@ function ProductsContent() {
                 if (!matchEn && !matchAr) return false;
             }
             if (selectedCategory && p.category?.slug !== selectedCategory) return false;
-            if (p.basePrice < priceRange[0] || p.basePrice > priceRange[1]) return false;
+            // Only apply price filter if user has actively changed it (min > 0 or max < maxPrice)
+            const priceFilterActive = priceRange[0] > 0 || priceRange[1] < maxPrice;
+            if (priceFilterActive && (p.basePrice < priceRange[0] || p.basePrice > priceRange[1])) return false;
             if (duration) {
                 const hasDuration = p.variants?.some((v) => v.duration === duration);
                 if (!hasDuration) return false;
