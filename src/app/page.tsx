@@ -167,90 +167,60 @@ export default function HomePage() {
             whileInView="animate"
             viewport={{ once: true, margin: '-100px' }}
             variants={stagger}
-            className={`grid grid-cols-1 ${gridCols} gap-6`}
+            className={`grid grid-cols-1 md:grid-cols-2 gap-4`}
           >
             {loaded && featured.length > 0
               ? featured.map((product) => (
                 <motion.div key={product.id} variants={fadeInUp}>
                   <Link href={`/product/${product.slug}`}>
-                    <div className={`group relative rounded-2xl h-full flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-violet-500/15 dark:hover:shadow-violet-500/20 ${product.outOfStock ? 'opacity-60' : ''} bg-white dark:bg-[#0d0f17] border border-gray-200 dark:border-gray-800 hover:border-violet-400/60 dark:hover:border-violet-500/40`}>
-                      {/* Gradient border glow on hover */}
-                      <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-br from-violet-500/0 via-indigo-500/0 to-purple-500/0 group-hover:from-violet-500/20 group-hover:via-indigo-500/10 group-hover:to-purple-500/20 transition-all duration-500 pointer-events-none -z-10" />
-
-                      {/* Logo Area */}
-                      <div className={`relative flex items-center justify-center py-10 ${product.outOfStock ? 'grayscale' : ''}`}>
-                        <div className="absolute w-32 h-32 rounded-full bg-violet-500/8 dark:bg-violet-500/5 blur-2xl" />
-
+                    <div className={`group flex items-start gap-4 p-4 rounded-2xl transition-all duration-300 hover:shadow-lg ${product.outOfStock ? 'opacity-60' : ''} bg-gray-50/80 dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800/60 hover:border-gray-200 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/[0.05]`}>
+                      {/* Logo */}
+                      <div className={`shrink-0 w-16 h-16 rounded-xl bg-white dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/50 flex items-center justify-center p-2.5 ${product.outOfStock ? 'grayscale' : ''}`}>
                         {product.images?.[0] ? (
                           <OptimizedImage
                             src={product.images[0]}
                             alt={product.name}
-                            width={200}
-                            height={200}
-                            className="relative w-20 h-20 object-contain drop-shadow-lg group-hover:scale-110 transition-transform duration-500"
+                            width={100}
+                            height={100}
+                            className="w-full h-full object-contain"
                           />
                         ) : (
-                          <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-500/15 to-indigo-500/15 flex items-center justify-center">
-                            <Package className="w-10 h-10 text-violet-400/60" />
-                          </div>
-                        )}
-
-                        {/* Badges */}
-                        {product.outOfStock && (
-                          <div className="absolute top-3 end-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500 text-white text-[10px] font-bold shadow-lg">
-                            <Ban className="w-3 h-3" />
-                            {t.productsPage.unavailable}
-                          </div>
-                        )}
-                        {!product.outOfStock && (product.orderCount || 0) >= 10 && (
-                          <div className="absolute top-3 start-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold shadow-lg">
-                            <Star className="w-3 h-3 fill-current" />
-                            {locale === 'ar' ? 'الأكثر مبيعاً' : 'Bestseller'}
-                          </div>
-                        )}
-                        {(product.fullWarranty || product.variants?.some(v => v.warrantyDays > 0)) && (
-                          <div className="absolute top-3 end-3 flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-green-500 text-white text-[10px] font-bold shadow-lg">
-                            <Shield className="w-3 h-3" />
-                            {product.fullWarranty ? (locale === 'ar' ? 'ضمان كامل' : 'Full Warranty') : (locale === 'ar' ? 'ضمان' : 'Warranty')}
-                          </div>
+                          <Package className="w-8 h-8 text-gray-300 dark:text-gray-600" />
                         )}
                       </div>
 
                       {/* Content */}
-                      <div className="px-5 pb-5 flex flex-col flex-1">
-                        <h3 className={`font-bold text-base text-center mb-1 ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400'} transition-colors line-clamp-1`}>
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`font-bold text-base leading-snug mb-2 ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white'} line-clamp-2`}>
                           {locale === 'ar' && product.nameAr ? product.nameAr : product.name}
                         </h3>
 
-                        {product.variants?.length > 1 && (
-                          <p className="text-xs text-gray-400 dark:text-gray-500 text-center mb-3">
-                            {product.variants.length} {locale === 'ar' ? 'باقات متاحة' : 'plans available'}
-                          </p>
-                        )}
-
-                        <div className={`flex items-center justify-between mt-auto pt-3 border-t border-gray-100 dark:border-gray-800 ${product.outOfStock ? 'opacity-40' : ''}`}>
-                          <div>
-                            <span className="text-[11px] text-gray-400">{t.featured.from}</span>
-                            {product.discount > 0 && (
-                              <span className="text-[11px] text-red-400 font-medium line-through ms-2">
-                                {product.basePrice} {currencySymbol}
-                              </span>
-                            )}
-                            <div className="flex items-baseline gap-1">
-                              <span className={`text-xl font-extrabold ${product.outOfStock ? 'text-gray-400' : 'text-violet-600 dark:text-violet-400'}`}>
-                                {product.discount > 0
-                                  ? (product.basePrice - product.discount).toFixed(0)
-                                  : product.basePrice}
-                              </span>
-                              <span className="text-xs text-gray-400 font-medium">{currencySymbol}</span>
-                            </div>
-                          </div>
-
-                          <div className="w-8 h-8 rounded-full bg-violet-500 dark:bg-violet-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-violet-500/25">
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        {/* Tags */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {(product.fullWarranty || product.variants?.some(v => v.warrantyDays > 0)) && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                              <Shield className="w-3 h-3" />
+                              {locale === 'ar' ? 'ضمان' : 'Warranty'}
+                            </span>
+                          )}
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 text-[11px] font-semibold text-blue-700 dark:text-blue-400">
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
                             </svg>
-                          </div>
+                            {locale === 'ar' ? 'سياسة استرجاع' : 'Refund Policy'}
+                          </span>
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-50 dark:bg-orange-500/10 text-[11px] font-semibold text-orange-700 dark:text-orange-400">
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+                            </svg>
+                            {locale === 'ar' ? '60 دقيقة' : '60 min'}
+                          </span>
+                          {product.outOfStock && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-500/10 text-[11px] font-semibold text-red-600 dark:text-red-400">
+                              <Ban className="w-3 h-3" />
+                              {t.productsPage.unavailable}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
