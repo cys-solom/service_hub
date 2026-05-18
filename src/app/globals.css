@@ -9,9 +9,80 @@
 }
 
 .dark {
-  --background: #030712;
-  --foreground: #f9fafb;
+  --background: #06070a;
+  --foreground: #f0f1f3;
 }
+
+/* ====== Animated Background ====== */
+@keyframes bg-orbit {
+  0% { transform: translate(0%, 0%) scale(1); }
+  25% { transform: translate(10%, -15%) scale(1.1); }
+  50% { transform: translate(-5%, 10%) scale(0.95); }
+  75% { transform: translate(-10%, -5%) scale(1.05); }
+  100% { transform: translate(0%, 0%) scale(1); }
+}
+
+@keyframes bg-orbit-reverse {
+  0% { transform: translate(0%, 0%) scale(1); }
+  25% { transform: translate(-12%, 10%) scale(1.08); }
+  50% { transform: translate(8%, -8%) scale(0.92); }
+  75% { transform: translate(5%, 12%) scale(1.05); }
+  100% { transform: translate(0%, 0%) scale(1); }
+}
+
+.animated-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: var(--background);
+}
+
+.animated-bg::before,
+.animated-bg::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.12;
+}
+
+.animated-bg::before {
+  width: 600px;
+  height: 600px;
+  top: -10%;
+  left: -5%;
+  background: radial-gradient(circle, #7c3aed 0%, #4f46e5 50%, transparent 70%);
+  animation: bg-orbit 25s ease-in-out infinite;
+}
+
+.animated-bg::after {
+  width: 500px;
+  height: 500px;
+  bottom: -10%;
+  right: -5%;
+  background: radial-gradient(circle, #6366f1 0%, #8b5cf6 50%, transparent 70%);
+  animation: bg-orbit-reverse 30s ease-in-out infinite;
+}
+
+.dark .animated-bg::before { opacity: 0.08; }
+.dark .animated-bg::after { opacity: 0.06; }
+
+/* Third orb via extra element in layout */
+.animated-bg-orb3 {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  top: 40%;
+  left: 50%;
+  border-radius: 50%;
+  filter: blur(100px);
+  background: radial-gradient(circle, #a78bfa 0%, #7c3aed 50%, transparent 70%);
+  opacity: 0.08;
+  animation: bg-orbit 20s ease-in-out infinite reverse;
+}
+
+.dark .animated-bg-orb3 { opacity: 0.05; }
 
 @theme inline {
   --color-background: var(--background);

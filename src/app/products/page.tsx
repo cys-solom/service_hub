@@ -290,36 +290,45 @@ function ProductsContent() {
                                         }}
                                     >
                                         <Link href={`/product/${product.slug}`}>
-                                            <div className={`group rounded-2xl border ${product.outOfStock ? 'border-red-200/50 dark:border-red-800/30 opacity-75' : 'border-gray-200/60 dark:border-gray-800/60 hover:border-violet-300 dark:hover:border-violet-500/40'} bg-white dark:bg-gray-900/70 h-full flex flex-col relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-violet-500/8 hover:-translate-y-0.5`}>
-                                                {/* Image Section */}
-                                                <div className={`relative h-36 bg-gradient-to-br from-violet-50/80 to-indigo-50/60 dark:from-violet-500/5 dark:to-indigo-500/5 flex items-center justify-center overflow-hidden ${product.outOfStock ? 'grayscale opacity-60' : ''}`}>
+                                            <div className={`group relative rounded-2xl h-full flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1 ${product.outOfStock ? 'opacity-60 grayscale' : ''} bg-white/80 dark:bg-white/[0.03] border border-gray-200/70 dark:border-white/[0.06] hover:border-violet-300/50 dark:hover:border-violet-500/20 backdrop-blur-sm hover:shadow-xl hover:shadow-violet-500/5 dark:hover:shadow-violet-500/10`}>
+                                                {/* Hover glow effect */}
+                                                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-gradient-to-br from-violet-500/[0.03] via-transparent to-indigo-500/[0.03]" />
+
+                                                {/* Logo Section */}
+                                                <div className="relative flex items-center justify-center py-8 px-6">
                                                     {product.images?.[0] ? (
-                                                        <OptimizedImage
-                                                            src={product.images[0]}
-                                                            alt={product.name}
-                                                            width={200}
-                                                            height={200}
-                                                            className="w-24 h-24 object-contain group-hover:scale-105 transition-transform duration-300"
-                                                        />
+                                                        <div className="relative">
+                                                            {/* Subtle glow behind logo */}
+                                                            <div className="absolute inset-0 bg-violet-500/10 dark:bg-violet-500/5 rounded-full blur-2xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                                            <OptimizedImage
+                                                                src={product.images[0]}
+                                                                alt={product.name}
+                                                                width={200}
+                                                                height={200}
+                                                                className="relative w-20 h-20 object-contain group-hover:scale-110 transition-transform duration-500"
+                                                            />
+                                                        </div>
                                                     ) : (
-                                                        <Package className="w-14 h-14 text-violet-300 dark:text-violet-500/40" />
+                                                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center">
+                                                            <Package className="w-10 h-10 text-violet-400/50" />
+                                                        </div>
                                                     )}
 
                                                     {/* Badges */}
                                                     {product.outOfStock && (
-                                                        <div className="absolute top-3 end-3 z-20 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/90 text-white text-[10px] font-bold backdrop-blur-sm">
+                                                        <div className="absolute top-3 end-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500/90 text-white text-[10px] font-bold backdrop-blur-sm">
                                                             <Ban className="w-3 h-3" />
                                                             {t.productsPage.unavailable}
                                                         </div>
                                                     )}
                                                     {!product.outOfStock && (product.orderCount || 0) >= 10 && (
-                                                        <div className="absolute top-3 start-3 z-20 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/90 text-white text-[10px] font-bold backdrop-blur-sm">
+                                                        <div className="absolute top-3 start-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/90 text-white text-[10px] font-bold backdrop-blur-sm">
                                                             <Star className="w-3 h-3 fill-current" />
                                                             {locale === 'ar' ? 'الأكثر مبيعاً' : 'Bestseller'}
                                                         </div>
                                                     )}
                                                     {(product.fullWarranty || product.variants?.some(v => v.warrantyDays > 0)) && (
-                                                        <div className="absolute bottom-3 end-3 z-20 flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/90 text-white text-[10px] font-bold backdrop-blur-sm">
+                                                        <div className="absolute top-3 end-3 flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/80 text-white text-[10px] font-bold backdrop-blur-sm">
                                                             <Shield className="w-3 h-3" />
                                                             {product.fullWarranty ? (locale === 'ar' ? 'ضمان كامل' : 'Full Warranty') : (locale === 'ar' ? 'ضمان' : 'Warranty')}
                                                         </div>
@@ -327,18 +336,18 @@ function ProductsContent() {
                                                 </div>
 
                                                 {/* Content */}
-                                                <div className="p-5 flex flex-col flex-1">
-                                                    <h3 className={`font-bold text-[15px] leading-snug mb-1 ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400'} transition-colors line-clamp-1`}>
+                                                <div className="px-5 pb-5 flex flex-col flex-1">
+                                                    <h3 className={`font-bold text-[15px] leading-snug mb-1 text-center ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400'} transition-colors line-clamp-1`}>
                                                         {locale === 'ar' && product.nameAr ? product.nameAr : product.name}
                                                     </h3>
 
                                                     {product.variants?.length > 1 && (
-                                                        <p className="text-[11px] text-violet-500 dark:text-violet-400 font-medium mb-2">
+                                                        <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium text-center mb-3">
                                                             {product.variants.length} {locale === 'ar' ? 'باقات متاحة' : 'plans available'}
                                                         </p>
                                                     )}
 
-                                                    <div className={`flex items-end justify-between mt-auto pt-3 border-t border-gray-100 dark:border-gray-800/50 ${product.outOfStock ? 'opacity-40' : ''}`}>
+                                                    <div className={`flex items-center justify-between mt-auto pt-3 border-t border-gray-100 dark:border-white/[0.05] ${product.outOfStock ? 'opacity-40' : ''}`}>
                                                         <div>
                                                             {product.discount > 0 && (
                                                                 <span className="text-[11px] text-red-400 font-medium line-through block">
@@ -346,21 +355,18 @@ function ProductsContent() {
                                                                 </span>
                                                             )}
                                                             <div className="flex items-baseline gap-1">
-                                                                <span className={`text-xl font-extrabold ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white'}`}>
+                                                                <span className={`text-xl font-extrabold ${product.outOfStock ? 'text-gray-400' : 'bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 bg-clip-text text-transparent'}`}>
                                                                     {product.discount > 0
                                                                         ? (product.basePrice - product.discount).toFixed(0)
                                                                         : product.basePrice}
                                                                 </span>
                                                                 <span className="text-xs text-gray-400 font-medium">{currencySymbol}</span>
-                                                                {product.durationLabel && (
-                                                                    <span className="text-[11px] text-gray-400 font-medium">/ {product.durationLabel}</span>
-                                                                )}
                                                             </div>
                                                         </div>
 
-                                                        <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-500/10">
-                                                            <Star className="w-3 h-3 text-amber-500 fill-current" />
-                                                            <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">4.9</span>
+                                                        <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-100 dark:border-violet-500/10">
+                                                            <Star className="w-3 h-3 text-violet-500 dark:text-violet-400 fill-current" />
+                                                            <span className="text-[11px] font-bold text-violet-600 dark:text-violet-400">4.9</span>
                                                         </div>
                                                     </div>
                                                 </div>

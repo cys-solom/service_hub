@@ -45,6 +45,9 @@ export default function RootLayout({
             <SettingsProvider>
               <CartProvider>
                 <LayoutWrapper>
+                  <div className="animated-bg" aria-hidden="true">
+                    <div className="animated-bg-orb3" />
+                  </div>
                   <Navbar />
                   <main className="min-h-screen pt-16">{children}</main>
                   <Footer />
