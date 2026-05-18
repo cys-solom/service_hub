@@ -180,12 +180,12 @@ export default function HomePage() {
                           <OptimizedImage
                             src={product.images[0]}
                             alt={product.name}
-                            width={100}
-                            height={100}
-                            className="w-16 h-16 object-contain group-hover:scale-105 transition-transform duration-300"
+                            width={200}
+                            height={200}
+                            className="w-24 h-24 object-contain group-hover:scale-105 transition-transform duration-300"
                           />
                         ) : (
-                          <Package className="w-12 h-12 text-violet-300 dark:text-violet-500/40" />
+                          <Package className="w-14 h-14 text-violet-300 dark:text-violet-500/40" />
                         )}
 
                         {/* Badges */}
