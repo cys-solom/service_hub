@@ -175,17 +175,21 @@ export default function HomePage() {
                   <Link href={`/product/${product.slug}`}>
                     <div className={`group flex items-start gap-5 p-5 rounded-2xl transition-all duration-300 hover:shadow-lg ${product.outOfStock ? 'opacity-60' : ''} bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600/50 hover:border-violet-300 dark:hover:border-violet-500/60`}>
                       {/* Logo */}
-                      <div className={`shrink-0 w-[72px] h-[72px] rounded-2xl bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 flex items-center justify-center p-3 ${product.outOfStock ? 'grayscale' : ''}`}>
-                        {product.images?.[0] ? (
+                      <div className={`shrink-0 w-[72px] h-[72px] rounded-2xl bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 flex items-center justify-center p-3 overflow-hidden ${product.outOfStock ? 'grayscale' : ''}`}>
+                        {product.images?.[0] && !product.images[0].endsWith('.svg') ? (
                           <OptimizedImage
                             src={product.images[0]}
                             alt={product.name}
                             width={120}
                             height={120}
                             className="w-full h-full object-contain"
+                            fallbackIcon={false}
                           />
-                        ) : (
-                          <Package className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                        ) : null}
+                        {(!product.images?.[0] || product.images[0].endsWith('.svg')) && (
+                          <span className="text-2xl font-black text-violet-600 dark:text-violet-400 select-none">
+                            {(locale === 'ar' && product.nameAr ? product.nameAr : product.name).trim()[0]?.toUpperCase()}
+                          </span>
                         )}
                       </div>
 
