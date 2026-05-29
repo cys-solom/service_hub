@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { ShoppingBag, Copy, Check, ChevronDown, Trash2, AlertTriangle } from 'lucide-react';
 import { buildWhatsAppMessage, generateWhatsAppUrl } from '@/lib/whatsapp';
 import { useSettings } from '@/lib/settings-context';
@@ -152,14 +151,10 @@ export default function AdminOrdersPage() {
 
             {/* Delete All Modal */}
             {showDeleteAllModal && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
                 >
-                    <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
+                    <div
                         className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl border border-gray-200 dark:border-gray-800"
                     >
                         <div className="flex items-center gap-3 mb-4">
@@ -185,8 +180,8 @@ export default function AdminOrdersPage() {
                                 Delete All
                             </button>
                         </div>
-                    </motion.div>
-                </motion.div>
+                    </div>
+                </div>
             )}
 
             {loading ? (
@@ -212,10 +207,8 @@ export default function AdminOrdersPage() {
                         } catch { }
 
                         return (
-                            <motion.div
+                            <div
                                 key={order.id}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
                                 className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 overflow-hidden"
                             >
                                 <div
@@ -254,9 +247,7 @@ export default function AdminOrdersPage() {
                                 </div>
 
                                 {expandedId === order.id && (
-                                    <motion.div
-                                        initial={{ height: 0 }}
-                                        animate={{ height: 'auto' }}
+                                    <div
                                         className="border-t border-gray-200 dark:border-gray-800 p-5"
                                     >
                                         {/* Items */}
@@ -316,9 +307,9 @@ export default function AdminOrdersPage() {
                                                 Delete
                                             </button>
                                         </div>
-                                    </motion.div>
+                                    </div>
                                 )}
-                            </motion.div>
+                            </div>
                         );
                     })}
                 </div>

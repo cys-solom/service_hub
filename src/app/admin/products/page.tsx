@@ -1,30 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import {
-    Plus,
-    Edit,
-    Trash2,
-    Package,
-    X,
-    Save,
-    Eye,
-    EyeOff,
-    Clock,
-    Search,
-    AlertTriangle,
-    Ban,
-    Star,
-    Image as ImageIcon,
-    Link,
-    ArrowUp,
-    ArrowDown,
-    GripVertical,
-    ChevronUp,
-    ChevronDown,
+    Plus, Edit, Trash2, Package, X, Save,
+    Eye, EyeOff, Clock, Search, AlertTriangle,
+    Ban, Star, Link, ArrowUp, ArrowDown, CheckCircle,
+    Image as ImageIcon, ChevronUp, ChevronDown, GripVertical,
 } from 'lucide-react';
 import { useSettings } from '@/lib/settings-context';
+
+const A = {
+  bg: '#06070a', surface: '#0f1117', card: '#141928',
+  border: 'rgba(255,255,255,0.07)', text: '#E8E8E8',
+  textSec: '#9ca3af', textMuted: '#686868', accent: '#a78bfa',
+  accentSolid: '#7c3aed', green: '#10b981', red: '#f87171', amber: '#fbbf24',
+};
+
 
 interface VariantInput {
     title: string;
@@ -496,128 +487,97 @@ export default function AdminProductsPage() {
         .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Products</h2>
-                <div className="flex items-center gap-3">
-                    {/* Search */}
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div>
+                  <h1 style={{ fontSize: '1.1rem', fontWeight: 700, color: A.text, margin: 0 }}>Products</h1>
+                  <p style={{ fontSize: '0.75rem', color: A.textMuted, margin: 0 }}>{filteredProducts.length} products</p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative' }}>
+                        <Search style={{ position: 'absolute', left: '0.625rem', top: '50%', transform: 'translateY(-50%)', width: 15, height: 15, color: A.textMuted }} />
                         <input
                             type="text"
                             placeholder="Search products..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 pr-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm outline-none focus:ring-2 focus:ring-violet-500 w-48"
+                            className="adm-input"
+                            style={{ paddingLeft: '2rem', width: 200 }}
                         />
                     </div>
                     <button
-                        onClick={() => {
-                            setEditingProduct(null);
-                            resetForm();
-                            setShowForm(true);
-                        }}
-                        className="px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-medium flex items-center gap-2 text-sm"
+                        onClick={() => { setEditingProduct(null); resetForm(); setShowForm(true); }}
+                        className="adm-btn adm-btn--primary"
                     >
-                        <Plus className="w-4 h-4" />
-                        Add Product
+                        <Plus style={{ width: 16, height: 16 }} /> Add Product
                     </button>
                 </div>
             </div>
 
-            {/* Unavailable Until Modal */}
+            {/* Unavailable Modal */}
             {showUnavailableModal && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-sm w-full"
-                    >
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                                <Clock className="w-5 h-5 text-amber-500" />
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backdropFilter: 'blur(4px)' }}>
+                    <div className="page-enter" style={{ background: A.card, border: `1px solid ${A.border}`, borderRadius: 20, padding: '1.5rem', maxWidth: 400, width: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(251,191,36,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Clock style={{ width: 20, height: 20, color: A.amber }} />
                             </div>
                             <div>
-                                <h3 className="font-semibold text-gray-900 dark:text-white">Set Unavailable Period</h3>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Product will be hidden until this date</p>
+                                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: A.text, margin: 0 }}>Set Unavailable Period</h3>
+                                <p style={{ fontSize: '0.72rem', color: A.textMuted, margin: 0 }}>Product hidden until this date</p>
                             </div>
                         </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                                    Unavailable Until
-                                </label>
-                                <input
-                                    type="datetime-local"
-                                    value={unavailableDate}
-                                    onChange={(e) => setUnavailableDate(e.target.value)}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm"
-                                />
-                            </div>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => handleSetUnavailable(showUnavailableModal)}
-                                    className="flex-1 py-2.5 bg-amber-500 text-white rounded-xl text-sm font-medium hover:bg-amber-600 transition"
-                                >
-                                    Set Unavailable
-                                </button>
-                                <button
-                                    onClick={() => { setShowUnavailableModal(null); setUnavailableDate(''); }}
-                                    className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
+                        <label className="adm-label">Unavailable Until</label>
+                        <input type="datetime-local" value={unavailableDate} onChange={(e) => setUnavailableDate(e.target.value)} className="adm-input" style={{ marginBottom: '1rem' }} />
+                        <div style={{ display: 'flex', gap: '0.625rem' }}>
+                            <button onClick={() => handleSetUnavailable(showUnavailableModal)} className="adm-btn" style={{ flex: 1, background: A.amber, color: '#000' }}>Set Unavailable</button>
+                            <button onClick={() => { setShowUnavailableModal(null); setUnavailableDate(''); }} className="adm-btn adm-btn--ghost" style={{ flex: 1 }}>Cancel</button>
                         </div>
-                    </motion.div>
+                    </div>
                 </div>
             )}
 
             {/* Product Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-                    >
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
-                                {editingProduct ? 'Edit Product' : 'New Product'}
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backdropFilter: 'blur(6px)' }}>
+                    <div className="page-enter" style={{ background: A.card, border: `1px solid ${A.border}`, borderRadius: 20, padding: '1.5rem', maxWidth: 680, width: '100%', maxHeight: '92vh', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: A.text, margin: 0 }}>
+                                {editingProduct ? '✏️ Edit Product' : '✨ New Product'}
                             </h3>
-                            <button onClick={() => setShowForm(false)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                                <X className="w-5 h-5" />
+                            <button onClick={() => setShowForm(false)} style={{ padding: '0.375rem', borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.06)', color: A.textMuted, cursor: 'pointer', display: 'flex' }}>
+                                <X style={{ width: 18, height: 18 }} />
                             </button>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                                    <label className="adm-label">Name</label>
                                     <input
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-') })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                                        className="adm-input"
                                         required
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Slug</label>
+                                    <label className="adm-label">Slug</label>
                                     <input
                                         value={formData.slug}
                                         onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                                        className="adm-input"
                                         required
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                                <label className="adm-label">Category</label>
                                 <select
                                     value={formData.categoryId}
                                     onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                                    className="adm-input"
                                     required
                                 >
                                     <option value="">Select category</option>
@@ -627,64 +587,64 @@ export default function AdminProductsPage() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description (English)</label>
+                                <label className="adm-label">Description (English)</label>
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     rows={2}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm resize-none"
+                                    className="adm-input"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name (Arabic) <span className="text-xs text-gray-400">اسم المنتج</span></label>
+                                <label className="adm-label">Name (Arabic) <span className="text-xs text-gray-400">اسم المنتج</span></label>
                                 <input
                                     value={formData.nameAr}
                                     onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                                    className="adm-input"
                                     dir="rtl"
                                     placeholder="اسم المنتج بالعربية"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description (Arabic) <span className="text-xs text-gray-400">الوصف</span></label>
+                                <label className="adm-label">Description (Arabic) <span className="text-xs text-gray-400">الوصف</span></label>
                                 <textarea
                                     value={formData.descriptionAr}
                                     onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
                                     rows={2}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm resize-none"
+                                    className="adm-input"
                                     dir="rtl"
                                     placeholder="وصف المنتج بالعربية"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Base Price ({currencySymbol})</label>
+                                    <label className="adm-label">Base Price ({currencySymbol})</label>
                                     <input
                                         type="number"
                                         step="0.01"
                                         value={formData.basePrice}
                                         onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                                        className="adm-input"
                                         required
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Discount ({currencySymbol})</label>
+                                    <label className="adm-label">Discount ({currencySymbol})</label>
                                     <input
                                         type="number"
                                         step="0.01"
                                         value={formData.discount}
                                         onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                                        className="adm-input"
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Card Duration Label</label>
+                                <label className="adm-label">Card Duration Label</label>
                                 <input
                                     value={formData.durationLabel}
                                     onChange={(e) => setFormData({ ...formData, durationLabel: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                                    className="adm-input"
                                     placeholder="e.g. شهري, سنوي, yearly, monthly"
                                 />
                                 <p className="text-xs text-gray-400 mt-1">Text shown on product card like &quot;170 EGP /شهري&quot;</p>
@@ -775,34 +735,34 @@ export default function AdminProductsPage() {
                                 )}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Display Order</label>
+                                <label className="adm-label">Display Order</label>
                                 <input
                                     type="number"
                                     value={formData.displayOrder}
                                     onChange={(e) => setFormData({ ...formData, displayOrder: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                                    className="adm-input"
                                     placeholder="0"
                                 />
                                 <p className="text-xs text-gray-400 mt-1">Lower numbers appear first (0, 1, 2...)</p>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Features (English, one per line)</label>
+                                <label className="adm-label">Features (English, one per line)</label>
                                 <textarea
                                     value={formData.features}
                                     onChange={(e) => setFormData({ ...formData, features: e.target.value })}
                                     rows={2}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm resize-none"
+                                    className="adm-input"
                                     placeholder={"Feature 1\nFeature 2"}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Features (Arabic) <span className="text-xs text-gray-400">المميزات</span></label>
+                                <label className="adm-label">Features (Arabic) <span className="text-xs text-gray-400">المميزات</span></label>
                                 <textarea
                                     value={formData.featuresAr}
                                     onChange={(e) => setFormData({ ...formData, featuresAr: e.target.value })}
                                     rows={2}
                                     dir="rtl"
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm resize-none"
+                                    className="adm-input"
                                     placeholder="ميزة 1
 ميزة 2"
                                 />
@@ -850,14 +810,14 @@ export default function AdminProductsPage() {
 
                             {/* Unavailable Until */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <label className="adm-label">
                                     Unavailable Until (optional)
                                 </label>
                                 <input
                                     type="datetime-local"
                                     value={formData.unavailableUntil}
                                     onChange={(e) => setFormData({ ...formData, unavailableUntil: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                                    className="adm-input"
                                 />
                                 <p className="text-xs text-gray-400 mt-1">Leave empty if product is always available</p>
                             </div>
@@ -942,17 +902,16 @@ export default function AdminProductsPage() {
                                 {editingProduct ? 'Update Product' : 'Create Product'}
                             </button>
                         </form>
-                    </motion.div>
+                    </div>
                 </div>
             )}
 
-            {/* Products List */}
             {loading ? (
-                <div className="space-y-4">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {[1, 2, 3].map((i) => (
-                        <div key={i} className="rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-                            <div className="skeleton h-6 w-48 mb-2" />
-                            <div className="skeleton h-4 w-32" />
+                        <div key={i} style={{ background: '#141928', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '1.25rem' }}>
+                            <div className="sk" style={{ height: 18, width: 200, borderRadius: 8, marginBottom: 8 }} />
+                            <div className="sk" style={{ height: 13, width: 120, borderRadius: 6 }} />
                         </div>
                     ))}
                 </div>
@@ -967,11 +926,15 @@ export default function AdminProductsPage() {
                         </div>
                     )}
                     {filteredProducts.map((product) => (
-                        <motion.div
+                        <div
                             key={product.id}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className={`rounded-2xl border ${isUnavailable(product) ? 'border-amber-300 dark:border-amber-700' : 'border-gray-200 dark:border-gray-800'} bg-white dark:bg-gray-900/50 p-5`}
+                            className="card-stagger"
+                            style={{
+                                background: '#141928',
+                                border: `1px solid ${isUnavailable(product) ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.07)'}`,
+                                borderRadius: 16,
+                                padding: '1.25rem',
+                            }}
                         >
                             <div className="flex items-start justify-between gap-4">
                                 <div className="flex items-center gap-4">
@@ -1280,11 +1243,11 @@ export default function AdminProductsPage() {
                                     </div>
                                 )}
                             </div>
-                        </motion.div>
+                        </div>
                     ))
                     }
-                </div >
+                </div>
             )}
-        </div >
+        </div>
     );
 }

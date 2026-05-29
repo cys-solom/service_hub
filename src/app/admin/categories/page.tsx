@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { Plus, Edit, Trash2, X, Save, FolderOpen } from 'lucide-react';
 
 interface CategoryData {
@@ -93,9 +92,7 @@ export default function AdminCategoriesPage() {
 
             {showForm && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
+                    <div
                         className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-md w-full"
                     >
                         <div className="flex items-center justify-between mb-6">
@@ -146,7 +143,7 @@ export default function AdminCategoriesPage() {
                                 {editing ? 'Update' : 'Create'}
                             </button>
                         </form>
-                    </motion.div>
+                    </div>
                 </div>
             )}
 
@@ -166,10 +163,8 @@ export default function AdminCategoriesPage() {
             ) : (
                 <div className="space-y-3">
                     {categories.map((cat) => (
-                        <motion.div
+                        <div
                             key={cat.id}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
                             className="flex items-center justify-between rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 p-5"
                         >
                             <div className="flex items-center gap-3">
@@ -189,7 +184,7 @@ export default function AdminCategoriesPage() {
                                     <Trash2 className="w-4 h-4 text-red-500" />
                                 </button>
                             </div>
-                        </motion.div>
+                        </div>
                     ))}
                 </div>
             )}

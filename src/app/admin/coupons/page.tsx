@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import {
     Plus,
     Trash2,
@@ -144,9 +143,7 @@ export default function AdminCouponsPage() {
             {/* Create Form Modal */}
             {showForm && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
+                    <div
                         className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-md w-full"
                     >
                         <div className="flex items-center justify-between mb-6">
@@ -241,7 +238,7 @@ export default function AdminCouponsPage() {
                                 Create Coupon
                             </button>
                         </form>
-                    </motion.div>
+                    </div>
                 </div>
             )}
 
@@ -263,10 +260,8 @@ export default function AdminCouponsPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {coupons.map((coupon) => (
-                        <motion.div
+                        <div
                             key={coupon.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
                             className={`rounded-2xl border ${isExpired(coupon.expiresAt) ? 'border-red-200 dark:border-red-800/50' : 'border-gray-200 dark:border-gray-800'} bg-white dark:bg-gray-900/50 p-5`}
                         >
                             <div className="flex items-start justify-between gap-3">
@@ -333,7 +328,7 @@ export default function AdminCouponsPage() {
                                     <span className="text-gray-400 font-medium">Inactive</span>
                                 )}
                             </div>
-                        </motion.div>
+                        </div>
                     ))}
                 </div>
             )}
