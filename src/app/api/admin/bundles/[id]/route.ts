@@ -10,12 +10,13 @@ function authCheck(req: NextRequest) {
 }
 
 // PUT update bundle
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!authCheck(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
+    const { id } = await params;
     const body = await req.json();
     const bundle = await prisma.bundle.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title:         body.title,
         titleAr:       body.titleAr,
@@ -43,12 +44,14 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 // DELETE bundle
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!authCheck(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
-    await prisma.bundle.delete({ where: { id: params.id } });
+    const { id } = await params;
+    await prisma.bundle.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
+
