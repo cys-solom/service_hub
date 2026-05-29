@@ -2,560 +2,653 @@
 
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import Link from 'next/link';
 import {
-    ArrowLeft,
-    Check,
-    ShoppingCart,
-    MessageCircle,
-    Package,
-    Star,
-    Plus,
-    Minus,
-    Ban,
-    Tag,
-    X,
-    Shield,
+  ArrowLeft, Check, ShoppingCart, MessageCircle,
+  Plus, Minus, Ban, Tag, X, Shield, Zap, Star, ExternalLink,
 } from 'lucide-react';
 import { useCart } from '@/lib/cart-context';
 import { Product, ProductVariant, Settings, WarrantyOption } from '@/lib/types';
 import { buildWhatsAppMessage, generateWhatsAppUrl, generateOrderCode, openWhatsApp } from '@/lib/whatsapp';
 import { useI18n } from '@/lib/i18n';
 import { useSettings } from '@/lib/settings-context';
-import OptimizedImage from '@/components/OptimizedImage';
+import ProductLogo from '@/components/ProductLogo';
+import { getProductFeatureData, getProductAccentColor } from '@/lib/product-features';
+
+/* ─────────────────────────────────────────────────
+   Design tokens — consistent with homepage + cards
+───────────────────────────────────────────────── */
+const D = {
+  bg: '#0d0d0d',
+  surface: '#101010',
+  surfaceUp: '#141414',
+  border: 'rgba(255,255,255,0.07)',
+  borderMid: 'rgba(255,255,255,0.10)',
+  text: '#E8E8E8',
+  textSec: '#686868',
+  textMuted: '#404040',
+  green: '#22c55e',
+  greenBg: 'rgba(34,197,94,0.10)',
+  greenBorder: 'rgba(34,197,94,0.20)',
+  red: '#f87171',
+  redBg: 'rgba(248,113,113,0.10)',
+  yellow: '#fbbf24',
+};
 
 export default function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
-    const { slug } = use(params);
-    const router = useRouter();
-    const { addItem } = useCart();
-    const [product, setProduct] = useState<Product | null>(null);
-    const [settings, setSettings] = useState<Settings | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
-    const [quantity, setQuantity] = useState(1);
-    const [addedToCart, setAddedToCart] = useState(false);
-    const [customerName, setCustomerName] = useState('');
-    const [customerPhone, setCustomerPhone] = useState('');
-    const [showOrderForm, setShowOrderForm] = useState(false);
-    const [selectedWarrantyIndex, setSelectedWarrantyIndex] = useState(-1);
-    const [couponCode, setCouponCode] = useState('');
-    const [couponLoading, setCouponLoading] = useState(false);
-    const [couponError, setCouponError] = useState('');
-    const [appliedCoupon, setAppliedCoupon] = useState<{
-        code: string; discount: number; isPercent: boolean; discountAmount: number;
-    } | null>(null);
-    const { t, locale } = useI18n();
-    const { currencySymbol, currency } = useSettings();
+  const { slug } = use(params);
+  const router = useRouter();
+  const { addItem } = useCart();
 
-    useEffect(() => {
-        Promise.all([
-            fetch(`/api/products/slug/${slug}`).then((r) => r.json()),
-            fetch('/api/settings').then((r) => r.json()),
-        ]).then(([prod, sett]) => {
-            if (prod.error) {
-                router.push('/products');
-                return;
-            }
-            setProduct(prod);
-            setSettings(sett);
-            if (prod.variants?.length > 0) {
-                // Auto-select first in-stock variant
-                const inStockVariant = prod.variants.find((v: ProductVariant) => !v.outOfStock);
-                setSelectedVariant(inStockVariant || prod.variants[0]);
-            }
-            setLoading(false);
-        }).catch(() => setLoading(false));
-    }, [slug, router]);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [showOrderForm, setShowOrderForm] = useState(false);
+  const [selectedWarrantyIndex, setSelectedWarrantyIndex] = useState(-1);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string; discount: number; isPercent: boolean; discountAmount: number;
+  } | null>(null);
 
-    const currentPrice = selectedVariant?.price || product?.basePrice || 0;
-    const rawWo = product?.warrantyOptions;
-    const warrantyOptions: WarrantyOption[] = Array.isArray(rawWo) ? rawWo : (typeof rawWo === 'string' ? (() => { try { return JSON.parse(rawWo); } catch { return []; } })() : []);
-    const selectedWarranty = selectedWarrantyIndex >= 0 ? warrantyOptions[selectedWarrantyIndex] : null;
-    const warrantyPrice = selectedWarranty?.price || 0;
-    const subtotal = (currentPrice * quantity) + warrantyPrice;
-    const discountAmount = appliedCoupon?.discountAmount || 0;
-    const finalPrice = Math.max(0, subtotal - discountAmount);
-    const isOutOfStock = product?.outOfStock || false;
-    const isSelectedVariantOutOfStock = selectedVariant?.outOfStock || false;
-    const canPurchase = !isOutOfStock && !isSelectedVariantOutOfStock;
+  const { t, locale } = useI18n();
+  const { currencySymbol, currency } = useSettings();
+  const isAr = locale === 'ar';
 
-    // Recalculate coupon when price/quantity changes
-    useEffect(() => {
-        if (appliedCoupon) {
-            const newSubtotal = currentPrice * quantity;
-            const newDiscount = appliedCoupon.isPercent
-                ? (newSubtotal * appliedCoupon.discount) / 100
-                : appliedCoupon.discount;
-            setAppliedCoupon(prev => prev ? { ...prev, discountAmount: Math.min(newDiscount, newSubtotal) } : null);
-        }
-    }, [currentPrice, quantity]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    Promise.all([
+      fetch(`/api/products/slug/${slug}`).then((r) => r.json()),
+      fetch('/api/settings').then((r) => r.json()),
+    ]).then(([prod, sett]) => {
+      if (prod.error) { router.push('/products'); return; }
+      setProduct(prod);
+      setSettings(sett);
+      const inStock = prod.variants?.find((v: ProductVariant) => !v.outOfStock);
+      setSelectedVariant(inStock || prod.variants?.[0] || null);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [slug, router]);
 
-    const handleApplyCoupon = async () => {
-        if (!couponCode.trim()) return;
-        setCouponLoading(true);
-        setCouponError('');
-        try {
-            const res = await fetch('/api/coupons/validate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: couponCode, orderTotal: subtotal }),
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                setCouponError(data.error || 'Invalid coupon');
-            } else {
-                setAppliedCoupon({
-                    code: data.coupon.code,
-                    discount: data.coupon.discount,
-                    isPercent: data.coupon.isPercent,
-                    discountAmount: data.discountAmount,
-                });
-                setCouponCode('');
-            }
-        } catch {
-            setCouponError('Failed to validate coupon');
-        }
-        setCouponLoading(false);
-    };
+  /* ── Derived values ── */
+  const accentColor = product ? getProductAccentColor(product.name) : '#a78bfa';
+  const featureData = product ? getProductFeatureData(product.name) : null;
 
-    const handleRemoveCoupon = () => {
-        setAppliedCoupon(null);
-        setCouponCode('');
-        setCouponError('');
-    };
+  const currentPrice = selectedVariant?.price || product?.basePrice || 0;
+  const rawWo = product?.warrantyOptions;
+  const warrantyOptions: WarrantyOption[] = Array.isArray(rawWo)
+    ? rawWo
+    : (typeof rawWo === 'string' ? (() => { try { return JSON.parse(rawWo); } catch { return []; } })() : []);
+  const selectedWarranty = selectedWarrantyIndex >= 0 ? warrantyOptions[selectedWarrantyIndex] : null;
+  const warrantyPrice = selectedWarranty?.price || 0;
+  const subtotal = (currentPrice * quantity) + warrantyPrice;
+  const discountAmount = appliedCoupon?.discountAmount || 0;
+  const finalPrice = Math.max(0, subtotal - discountAmount);
+  const isOutOfStock = product?.outOfStock || false;
+  const isSelectedVariantOutOfStock = selectedVariant?.outOfStock || false;
+  const canPurchase = !isOutOfStock && !isSelectedVariantOutOfStock;
+  const plansCount = product?.variants?.filter(v => v.isActive)?.length || 1;
 
-    const handleAddToCart = () => {
-        if (!product || !selectedVariant) return;
-        addItem({
-            productId: product.id,
-            productName: product.name,
-            productSlug: product.slug,
-            productImage: product.images?.[0] || '',
-            variantId: selectedVariant.id,
-            variantTitle: selectedVariant.title,
-            duration: selectedVariant.duration,
-            price: selectedVariant.price,
-            quantity,
-        });
-        setAddedToCart(true);
-        setTimeout(() => setAddedToCart(false), 2000);
-    };
-
-    const handleWhatsAppOrder = async () => {
-        if (!product || !selectedVariant || !settings) return;
-        if (!customerName || !customerPhone) {
-            setShowOrderForm(true);
-            return;
-        }
-
-        const orderCode = generateOrderCode();
-
-        try {
-            await fetch('/api/orders', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    customerName,
-                    customerPhone,
-                    items: [
-                        {
-                            productId: product.id,
-                            productName: product.name,
-                            variant: selectedVariant.title,
-                            price: selectedVariant.price,
-                            quantity,
-                        },
-                    ],
-                    totalPrice: finalPrice,
-                    couponCode: appliedCoupon?.code || null,
-                }),
-            });
-        } catch (err) {
-            console.error('Failed to save order', err);
-        }
-
-        const message = buildWhatsAppMessage({
-            orderCode,
-            customerName,
-            customerPhone,
-            items: [
-                {
-                    productName: product.name,
-                    variant: selectedVariant.title,
-                    price: selectedVariant.price,
-                    quantity,
-                },
-            ],
-            totalPrice: finalPrice,
-            currency: currency || 'EGP',
-            locale,
-        });
-
-        const url = generateWhatsAppUrl(settings.whatsappPhone, message);
-        openWhatsApp(url);
-        setTimeout(() => router.push(`/thank-you?code=${orderCode}`), 500);
-    };
-
-    if (loading) {
-        return (
-            <div className="min-h-screen pt-8 pb-20 px-4">
-                <div className="max-w-5xl mx-auto">
-                    <div className="skeleton h-6 w-32 mb-8" />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                        <div className="skeleton h-80 rounded-3xl" />
-                        <div>
-                            <div className="skeleton h-8 w-3/4 mb-4" />
-                            <div className="skeleton h-5 w-1/2 mb-6" />
-                            <div className="skeleton h-20 w-full mb-6" />
-                            <div className="skeleton h-12 w-full" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
+  useEffect(() => {
+    if (appliedCoupon) {
+      const newSubtotal = currentPrice * quantity;
+      const newDiscount = appliedCoupon.isPercent
+        ? (newSubtotal * appliedCoupon.discount) / 100
+        : appliedCoupon.discount;
+      setAppliedCoupon(prev => prev ? { ...prev, discountAmount: Math.min(newDiscount, newSubtotal) } : null);
     }
+  }, [currentPrice, quantity]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    if (!product) return null;
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true); setCouponError('');
+    try {
+      const res = await fetch('/api/coupons/validate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: couponCode, orderTotal: subtotal }),
+      });
+      const data = await res.json();
+      if (!res.ok) setCouponError(data.error || 'Invalid coupon');
+      else setAppliedCoupon({ code: data.coupon.code, discount: data.coupon.discount, isPercent: data.coupon.isPercent, discountAmount: data.discountAmount });
+      setCouponCode('');
+    } catch { setCouponError('Failed to validate coupon'); }
+    setCouponLoading(false);
+  };
+  const handleRemoveCoupon = () => { setAppliedCoupon(null); setCouponCode(''); setCouponError(''); };
 
-    return (
-        <div className="min-h-screen pt-8 pb-20 px-4">
-            <div className="max-w-5xl mx-auto">
-                {/* Back button */}
-                <motion.button
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    onClick={() => router.back()}
-                    className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition mb-8"
-                >
-                    <ArrowLeft className={`w-4 h-4 ${locale === 'ar' ? 'rotate-180' : ''}`} />
-                    {t.product.backToProducts}
-                </motion.button>
+  const handleAddToCart = () => {
+    if (!product || !selectedVariant) return;
+    addItem({ productId: product.id, productName: product.name, productSlug: product.slug, productImage: product.images?.[0] || '', variantId: selectedVariant.id, variantTitle: selectedVariant.title, duration: selectedVariant.duration, price: selectedVariant.price, quantity });
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2000);
+  };
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                    {/* Product Image */}
-                    <motion.div
-                        initial={{ opacity: 0, x: -30 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        <div className="rounded-3xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800/50 p-8 sm:p-12 flex items-center justify-center min-h-[240px] sm:min-h-[320px]">
-                            {product.images?.[0] ? (
-                                <OptimizedImage
-                                    src={product.images[0]}
-                                    alt={product.name}
-                                    width={200}
-                                    height={200}
-                                    className="max-w-[150px] sm:max-w-[200px] max-h-[150px] sm:max-h-[200px] object-contain"
-                                    priority
-                                />
-                            ) : (
-                                <Package className="w-24 h-24 sm:w-32 sm:h-32 text-gray-300 dark:text-gray-600" />
-                            )}
-                        </div>
-                    </motion.div>
+  const handleWhatsAppOrder = async () => {
+    if (!product || !selectedVariant || !settings) return;
+    if (!customerName || !customerPhone) { setShowOrderForm(true); return; }
+    const orderCode = generateOrderCode();
+    try {
+      await fetch('/api/orders', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerName, customerPhone, items: [{ productId: product.id, productName: product.name, variant: selectedVariant.title, price: selectedVariant.price, quantity }], totalPrice: finalPrice, couponCode: appliedCoupon?.code || null }),
+      });
+    } catch (err) { console.error('Failed to save order', err); }
+    const message = buildWhatsAppMessage({ orderCode, customerName, customerPhone, items: [{ productName: product.name, variant: selectedVariant.title, price: selectedVariant.price, quantity }], totalPrice: finalPrice, currency: currency || 'EGP', locale });
+    openWhatsApp(generateWhatsAppUrl(settings.whatsappPhone, message));
+    setTimeout(() => router.push(`/thank-you?code=${orderCode}`), 500);
+  };
 
-                    {/* Product Info */}
-                    <motion.div
-                        initial={{ opacity: 0, x: 30 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        <div className="flex items-center gap-2 mb-2">
-                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400">
-                                {product.category?.name}
-                            </span>
-                            <div className="flex items-center gap-1 text-amber-500">
-                                <Star className="w-3.5 h-3.5 fill-current" />
-                                <span className="text-xs font-medium">4.9</span>
-                            </div>
-                            {isOutOfStock && (
-                                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 flex items-center gap-1">
-                                    <Ban className="w-3 h-3" /> Out of Stock
-                                </span>
-                            )}
-                        </div>
-
-                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                            {locale === 'ar' && product.nameAr ? product.nameAr : product.name}
-                        </h1>
-
-                        <p className="text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-                            {locale === 'ar' && product.descriptionAr ? product.descriptionAr : product.description}
-                        </p>
-
-                        {/* Features */}
-                        {product.features && product.features.length > 0 && (
-                            <div className="mb-6">
-                                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{t.product.features}</h3>
-                                <ul className="grid grid-cols-1 gap-2">
-                                    {(locale === 'ar' && product.featuresAr && product.featuresAr.length > 0
-                                        ? product.featuresAr
-                                        : product.features
-                                    ).map((feature, i) => (
-                                        <li key={i} className="flex items-start gap-2">
-                                            <Check className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                                            <span className="text-sm text-gray-600 dark:text-gray-400">{feature}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-
-                        {/* Variants */}
-                        {product.variants && product.variants.length > 0 && (
-                            <div className="mb-6">
-                                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{t.product.selectPlan}</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    {product.variants.map((variant) => (
-                                        <button
-                                            key={variant.id}
-                                            onClick={() => !variant.outOfStock && setSelectedVariant(variant)}
-                                            disabled={variant.outOfStock}
-                                            className={`p-4 rounded-xl border-2 text-start transition-all relative ${variant.outOfStock
-                                                ? 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-500/5 opacity-60 cursor-not-allowed'
-                                                : selectedVariant?.id === variant.id
-                                                    ? 'border-violet-500 bg-violet-50 dark:bg-violet-500/10'
-                                                    : 'border-gray-200 dark:border-gray-700 hover:border-violet-300 dark:hover:border-violet-500/50'
-                                                }`}
-                                        >
-                                            <div className={`text-sm font-medium ${variant.outOfStock ? 'text-gray-400 line-through' : 'text-gray-900 dark:text-white'}`}>
-                                                {variant.title}
-                                            </div>
-                                            <div className={`text-lg font-bold mt-1 ${variant.outOfStock ? 'text-gray-400 line-through' : 'text-violet-600 dark:text-violet-400'}`}>
-                                                {variant.price} {currencySymbol}
-                                            </div>
-                                            {variant.warrantyDays > 0 && (
-                                                <div className="flex items-center gap-1 mt-2 text-xs text-emerald-600 dark:text-emerald-400">
-                                                    <Shield className="w-3 h-3" />
-                                                    <span>{locale === 'ar' ? `ضمان ${variant.warrantyDays} يوم` : `${variant.warrantyDays} days warranty`}</span>
-                                                </div>
-                                            )}
-                                            {variant.outOfStock && (
-                                                <div className="absolute top-2 end-2 text-[10px] font-bold text-red-500 uppercase flex items-center gap-1">
-                                                    <Ban className="w-3 h-3" /> Out of Stock
-                                                </div>
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Full Warranty Badge */}
-                        {product?.fullWarranty && (
-                            <div className="mb-4 p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/10 border border-emerald-200 dark:border-emerald-500/20">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0">
-                                        <Shield className="w-5 h-5 text-white" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">
-                                            {locale === 'ar' ? '🛡️ ضمان كامل شامل' : '🛡️ Full Warranty Included'}
-                                        </h3>
-                                        <p className="text-xs text-emerald-600/70 dark:text-emerald-400/60 mt-0.5">
-                                            {locale === 'ar' ? 'جميع الباقات تشمل ضمان كامل بدون تكلفة إضافية' : 'All plans include full warranty at no extra cost'}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Warranty Upgrade Slider */}
-                        {!product?.fullWarranty && warrantyOptions.length > 0 && (
-                            <div className="mb-4">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <Shield className="w-4 h-4 text-emerald-500" />
-                                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
-                                        {locale === 'ar' ? '🛡️ ضمان إضافي' : '🛡️ Extended Warranty'}
-                                    </h3>
-                                </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                    {/* No warranty option */}
-                                    <button
-                                        onClick={() => setSelectedWarrantyIndex(-1)}
-                                        className={`p-3 rounded-xl border-2 text-start transition-all ${
-                                            selectedWarrantyIndex === -1
-                                                ? 'border-gray-400 dark:border-gray-500 bg-gray-50 dark:bg-gray-800'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
-                                        }`}
-                                    >
-                                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                            {locale === 'ar' ? 'بدون ضمان إضافي' : 'No extra warranty'}
-                                        </div>
-                                        <div className="text-sm font-bold text-gray-400 mt-1">
-                                            {locale === 'ar' ? 'مجاني' : 'Free'}
-                                        </div>
-                                    </button>
-                                    {/* Warranty tiers */}
-                                    {warrantyOptions.map((opt, idx) => (
-                                        <button
-                                            key={idx}
-                                            onClick={() => setSelectedWarrantyIndex(idx)}
-                                            className={`p-3 rounded-xl border-2 text-start transition-all relative ${
-                                                selectedWarrantyIndex === idx
-                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10'
-                                                    : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-500/50'
-                                            }`}
-                                        >
-                                            {selectedWarrantyIndex === idx && (
-                                                <div className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
-                                                    <Check className="w-3 h-3 text-white" />
-                                                </div>
-                                            )}
-                                            <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                                                {locale === 'ar' ? opt.labelAr || opt.label : opt.label}
-                                            </div>
-                                            <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-                                                +{opt.price} {currencySymbol}
-                                            </div>
-                                            <div className="text-[10px] text-gray-400 mt-0.5">
-                                                {opt.days} {locale === 'ar' ? 'يوم' : 'days'}
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Price & Quantity */}
-                        <div className="mb-6 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <span className="text-sm text-gray-500 dark:text-gray-400">{t.product.totalPrice}</span>
-                                    {appliedCoupon ? (
-                                        <div>
-                                            <p className="text-lg text-gray-400 line-through">
-                                                {subtotal.toFixed(2)} {currencySymbol}
-                                            </p>
-                                            <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
-                                                {finalPrice.toFixed(2)} {currencySymbol}
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                                            {subtotal.toFixed(2)} {currencySymbol}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                        className="w-10 h-10 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                                    >
-                                        <Minus className="w-4 h-4" />
-                                    </button>
-                                    <span className="text-lg font-semibold text-gray-900 dark:text-white w-8 text-center">
-                                        {quantity}
-                                    </span>
-                                    <button
-                                        onClick={() => setQuantity(quantity + 1)}
-                                        className="w-10 h-10 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Coupon Section */}
-                            {appliedCoupon ? (
-                                <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-800">
-                                    <div className="flex items-center gap-2">
-                                        <Tag className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                        <span className="text-sm font-mono font-bold text-emerald-700 dark:text-emerald-400">{appliedCoupon.code}</span>
-                                        <span className="text-xs text-emerald-600 dark:text-emerald-400">
-                                            (-{appliedCoupon.isPercent ? `${appliedCoupon.discount}%` : `${appliedCoupon.discount} ${currencySymbol}`})
-                                        </span>
-                                    </div>
-                                    <button onClick={handleRemoveCoupon} className="p-1 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 rounded transition">
-                                        <X className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                    </button>
-                                </div>
-                            ) : (
-                                <div>
-                                    <div className="flex items-stretch gap-0 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                                        <input
-                                            type="text"
-                                            placeholder={locale === 'ar' ? 'كود الخصم' : 'Coupon code'}
-                                            value={couponCode}
-                                            onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }}
-                                            className="flex-1 min-w-0 px-3 py-2.5 bg-white dark:bg-gray-900/50 text-gray-900 dark:text-white placeholder-gray-400 outline-none text-sm font-mono uppercase"
-                                        />
-                                        <button
-                                            onClick={handleApplyCoupon}
-                                            disabled={couponLoading || !couponCode.trim()}
-                                            className="px-4 py-2.5 bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                                        >
-                                            {couponLoading ? '...' : locale === 'ar' ? 'تطبيق' : 'Apply'}
-                                        </button>
-                                    </div>
-                                    {couponError && (
-                                        <p className="text-xs text-red-500 mt-1.5">{couponError}</p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Order Form */}
-                        {showOrderForm && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                className="mb-6 space-y-3"
-                            >
-                                <input
-                                    type="text"
-                                    placeholder={t.product.yourName}
-                                    value={customerName}
-                                    onChange={(e) => setCustomerName(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/50 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-violet-500 transition"
-                                />
-                                <input
-                                    type="tel"
-                                    placeholder={t.product.yourPhone}
-                                    value={customerPhone}
-                                    onChange={(e) => setCustomerPhone(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/50 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-violet-500 transition"
-                                />
-                            </motion.div>
-                        )}
-
-                        {/* Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-3">
-                            <button
-                                onClick={handleWhatsAppOrder}
-                                disabled={!canPurchase}
-                                className={`flex-1 px-6 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all ${!canPurchase
-                                    ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40'
-                                    }`}
-                            >
-                                {!canPurchase ? (
-                                    <><Ban className="w-5 h-5" /> Out of Stock</>
-                                ) : (
-                                    <><MessageCircle className="w-5 h-5" /> {t.product.orderWhatsApp}</>
-                                )}
-                            </button>
-
-                            <button
-                                onClick={handleAddToCart}
-                                disabled={!canPurchase}
-                                className={`flex-1 px-6 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all ${!canPurchase
-                                    ? 'border-2 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                                    : addedToCart
-                                        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-2 border-emerald-500'
-                                        : 'border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-violet-500 hover:text-violet-600 dark:hover:text-violet-400'
-                                    }`}
-                            >
-                                {addedToCart ? (
-                                    <><Check className="w-5 h-5" /> {t.product.added}</>
-                                ) : (
-                                    <><ShoppingCart className="w-5 h-5" /> {t.product.addToCart}</>
-                                )}
-                            </button>
-                        </div>
-                    </motion.div>
-                </div>
-            </div>
+  /* ── Full skeleton loading \u2014 mirrors actual layout ── */
+  if (loading) return (
+    <div style={{ minHeight: '100vh', padding: '0 1rem 6rem' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        {/* Breadcrumb skeleton */}
+        <div style={{ padding: '1.75rem 0 2rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <div className="sk" style={{ width: 120, height: 14, borderRadius: 6 }} />
+          <div className="sk" style={{ width: 8, height: 8, borderRadius: 3 }} />
+          <div className="sk" style={{ width: 160, height: 14, borderRadius: 6 }} />
         </div>
-    );
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,380px)', gap: '1.5rem' }}>
+          {/* Left panel */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {/* Hero card skeleton */}
+            <div style={{ background: 'linear-gradient(145deg,#101010,#0d0d0d)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, overflow: 'hidden' }}>
+              <div style={{ height: 3, background: 'rgba(139,92,246,0.2)' }} />
+              <div style={{ padding: '2rem' }}>
+                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+                  <div className="sk" style={{ width: 96, height: 96, borderRadius: '22%', flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div className="sk" style={{ height: 20, width: '35%', borderRadius: 20, marginBottom: 12 }} />
+                    <div className="sk" style={{ height: 28, width: '70%', borderRadius: 8, marginBottom: 10 }} />
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {[1,2,3,4,5].map(i => <div key={i} className="sk" style={{ width: 14, height: 14, borderRadius: 3 }} />)}
+                      <div className="sk" style={{ width: 60, height: 14, borderRadius: 5, marginLeft: 4 }} />
+                    </div>
+                  </div>
+                </div>
+                <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[90, 75, 85].map((w, i) => <div key={i} className="sk" style={{ height: 13, width: `${w}%`, borderRadius: 5 }} />)}
+                </div>
+              </div>
+            </div>
+
+            {/* Features card skeleton */}
+            <div style={{ background: 'linear-gradient(145deg,#101010,#0d0d0d)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '1.5rem' }}>
+              <div style={{ display: 'flex', gap: 10, marginBottom: '1.25rem' }}>
+                <div className="sk" style={{ width: 28, height: 28, borderRadius: 8 }} />
+                <div className="sk" style={{ width: 100, height: 14, borderRadius: 6, alignSelf: 'center' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px,1fr))', gap: '0.65rem' }}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="sk" style={{ height: 44, borderRadius: 10 }} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right panel skeleton */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {/* Plans */}
+            <div style={{ background: 'linear-gradient(145deg,#101010,#0d0d0d)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '1.5rem' }}>
+              <div className="sk" style={{ height: 12, width: '40%', borderRadius: 5, marginBottom: 14 }} />
+              {[1,2].map(i => <div key={i} className="sk" style={{ height: 56, borderRadius: 14, marginBottom: 8 }} />)}
+            </div>
+            {/* Price + actions */}
+            <div style={{ background: 'linear-gradient(145deg,#101010,#0d0d0d)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div className="sk" style={{ height: 10, width: '30%', borderRadius: 4 }} />
+              <div className="sk" style={{ height: 40, width: '60%', borderRadius: 8 }} />
+              <div className="sk" style={{ height: 1, borderRadius: 1 }} />
+              <div className="sk" style={{ height: 50, borderRadius: 14 }} />
+              <div className="sk" style={{ height: 50, borderRadius: 14 }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+  if (!product) return null;
+
+  const productName = isAr && product.nameAr ? product.nameAr : product.name;
+  const productDesc = isAr && product.descriptionAr ? product.descriptionAr : product.description;
+  const dbFeatures = isAr && product.featuresAr?.length ? product.featuresAr : product.features;
+  const builtinFeatures = isAr ? featureData?.ar : featureData?.en;
+  const features = (dbFeatures && dbFeatures.length > 0) ? dbFeatures : (builtinFeatures || []);
+
+  /* shared input style */
+  const inputSt: React.CSSProperties = {
+    width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem',
+    border: `1px solid ${D.border}`, background: D.surfaceUp,
+    color: D.text, outline: 'none', fontSize: '0.875rem', fontFamily: 'inherit',
+    boxSizing: 'border-box',
+    transition: 'border-color 0.15s',
+  };
+
+  return (
+    <>
+      {/* Spin keyframe */}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      <div style={{ minHeight: '100vh', padding: '0 1rem 6rem' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+
+          {/* ── Back breadcrumb ── */}
+          <div style={{ padding: '1.75rem 0 2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button
+              onClick={() => router.back()}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: D.textSec, fontSize: '0.85rem', fontFamily: 'inherit', padding: 0 }}
+            >
+              <ArrowLeft style={{ width: 15, height: 15, transform: isAr ? 'rotate(180deg)' : undefined }} />
+              {t.product.backToProducts}
+            </button>
+            <span style={{ color: D.textMuted, fontSize: '0.75rem' }}>›</span>
+            <span style={{ color: D.textMuted, fontSize: '0.75rem' }}>{productName}</span>
+          </div>
+
+          {/* ══════════════════════════════════════════
+              MAIN 2-COLUMN LAYOUT
+          ══════════════════════════════════════════ */}
+          <div className="pdp-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,380px)', gap: '1.5rem', alignItems: 'start' }}>
+
+            {/* ════════════
+                LEFT PANEL
+            ════════════ */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+              {/* ── Hero card: Logo + Name + Description ── */}
+              <div style={{
+                background: `linear-gradient(145deg, ${D.surface}, ${D.bg})`,
+                border: `1px solid ${D.border}`,
+                borderRadius: 20,
+                overflow: 'hidden',
+                position: 'relative',
+              }}>
+                {/* Accent top line */}
+                <div style={{ height: 3, background: accentColor, opacity: 0.9 }} />
+
+                {/* Background glow */}
+                <div style={{
+                  position: 'absolute', top: 0, right: 0,
+                  width: 280, height: 280,
+                  background: `radial-gradient(ellipse at top right, ${accentColor}12 0%, transparent 65%)`,
+                  pointerEvents: 'none',
+                }} />
+
+                <div style={{ padding: '2rem', position: 'relative' }}>
+                  {/* ── Row: Logo + Info ── */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem', marginBottom: '1.5rem' }}>
+
+                    {/* Logo — rounded square */}
+                    <div style={{
+                      width: 96, height: 96,
+                      borderRadius: '22%',
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                      background: `${accentColor}10`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: `0 0 0 1.5px ${accentColor}30, 0 8px 32px rgba(0,0,0,0.4), 0 0 40px ${accentColor}18`,
+                    }}>
+                      <ProductLogo
+                        productName={product.name}
+                        dbImage={product.images?.[0]}
+                        size={96}
+                        bg="transparent"
+                      />
+                    </div>
+
+                    {/* Name + category + meta */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {product.category?.name && (
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                          padding: '0.22rem 0.75rem', borderRadius: 999,
+                          fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
+                          background: `${accentColor}18`, color: accentColor,
+                          border: `1px solid ${accentColor}30`, marginBottom: '0.6rem',
+                        }}>
+                          {product.category.name}
+                        </span>
+                      )}
+
+                      <h1 style={{ fontSize: 'clamp(1.3rem, 3.5vw, 1.85rem)', fontWeight: 800, color: D.text, marginBottom: '0.6rem', letterSpacing: '-0.025em', lineHeight: 1.2 }}>
+                        {productName}
+                      </h1>
+
+                      {/* Stars + stock */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                          {[1,2,3,4,5].map(s => (
+                            <Star key={s} style={{ width: 13, height: 13, fill: '#fbbf24', color: '#fbbf24' }} />
+                          ))}
+                          <span style={{ fontSize: '0.75rem', color: D.textSec, marginLeft: 4 }}>4.9</span>
+                        </div>
+                        {isOutOfStock ? (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0.18rem 0.6rem', borderRadius: 6, fontSize: '0.7rem', fontWeight: 700, background: D.redBg, color: D.red, border: `1px solid ${D.red}30` }}>
+                            <Ban style={{ width: 10, height: 10 }} /> {isAr ? 'غير متوفر' : 'Out of Stock'}
+                          </span>
+                        ) : (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0.18rem 0.6rem', borderRadius: 6, fontSize: '0.7rem', fontWeight: 700, background: D.greenBg, color: D.green, border: `1px solid ${D.greenBorder}` }}>
+                            <Zap style={{ width: 10, height: 10 }} /> {isAr ? 'متوفر' : 'In Stock'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  {productDesc && (
+                    <p style={{ color: D.textSec, lineHeight: 1.75, fontSize: '0.88rem', borderTop: `1px solid ${D.border}`, paddingTop: '1.25rem' }}>
+                      {productDesc}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Real subscription features ── */}
+              {features.length > 0 && (
+                <div style={{ background: `linear-gradient(145deg, ${D.surface}, ${D.bg})`, border: `1px solid ${D.border}`, borderRadius: 20, padding: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 8, background: `${accentColor}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Check style={{ width: 14, height: 14, color: accentColor }} />
+                    </div>
+                    <h2 style={{ fontSize: '0.82rem', fontWeight: 700, color: D.textSec, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      {t.product.features}
+                    </h2>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.65rem' }}>
+                    {features.map((f, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', padding: '0.65rem 0.85rem', borderRadius: 10, background: `${accentColor}08`, border: `1px solid ${accentColor}15` }}>
+                        <span style={{ color: accentColor, fontWeight: 800, fontSize: '0.85rem', lineHeight: 1.5, flexShrink: 0 }}>✓</span>
+                        <span style={{ fontSize: '0.835rem', color: D.textSec, lineHeight: 1.55 }}>{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Full warranty banner ── */}
+              {product.fullWarranty && (
+                <div style={{ background: D.greenBg, border: `1px solid ${D.greenBorder}`, borderRadius: 16, padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: D.green, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Shield style={{ width: 22, height: 22, color: 'white' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, color: D.green, fontSize: '0.9rem' }}>
+                      🛡️ {isAr ? 'ضمان كامل شامل' : 'Full Warranty Included'}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: `${D.green}aa`, marginTop: 2 }}>
+                      {isAr ? 'جميع الباقات تشمل ضمان كامل بدون تكلفة إضافية' : 'All plans include full warranty at no extra cost'}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ════════════
+                RIGHT PANEL
+            ════════════ */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', position: 'sticky', top: '1.5rem' }}>
+
+              {/* ── Plan selector ── */}
+              {product.variants && product.variants.length > 0 && (
+                <div style={{ background: `linear-gradient(145deg, ${D.surface}, ${D.bg})`, border: `1px solid ${D.border}`, borderRadius: 20, padding: '1.25rem' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: D.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.875rem' }}>
+                    {t.product.selectPlan}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {product.variants.map((v) => {
+                      const isSel = selectedVariant?.id === v.id;
+                      return (
+                        <button
+                          key={v.id}
+                          onClick={() => !v.outOfStock && setSelectedVariant(v)}
+                          disabled={v.outOfStock}
+                          style={{
+                            width: '100%', textAlign: 'start', cursor: v.outOfStock ? 'not-allowed' : 'pointer',
+                            padding: '0.875rem 1rem', borderRadius: 12,
+                            background: isSel ? `${accentColor}12` : D.surfaceUp,
+                            border: `1.5px solid ${v.outOfStock ? D.border : isSel ? accentColor : D.border}`,
+                            opacity: v.outOfStock ? 0.5 : 1,
+                            transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '0.75rem',
+                            fontFamily: 'inherit',
+                          }}
+                        >
+                          {/* Selection indicator */}
+                          <div style={{
+                            width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                            border: `2px solid ${isSel ? accentColor : D.border}`,
+                            background: isSel ? accentColor : 'transparent',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            {isSel && <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#fff' }} />}
+                          </div>
+
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: isSel ? D.text : D.textSec, marginBottom: 2, textDecoration: v.outOfStock ? 'line-through' : 'none' }}>
+                              {v.title}
+                            </div>
+                            {v.duration && (
+                              <div style={{ fontSize: '0.73rem', color: D.textMuted }}>{v.duration}</div>
+                            )}
+                            {v.warrantyDays > 0 && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3, fontSize: '0.72rem', color: D.green }}>
+                                <Shield style={{ width: 11, height: 11 }} />
+                                {isAr ? `ضمان ${v.warrantyDays} يوم` : `${v.warrantyDays}-day warranty`}
+                              </div>
+                            )}
+                          </div>
+
+                          <div style={{ fontSize: '1rem', fontWeight: 800, color: isSel ? accentColor : D.textSec, textDecoration: v.outOfStock ? 'line-through' : 'none', whiteSpace: 'nowrap' }}>
+                            {v.price} {currencySymbol}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Warranty upgrade ── */}
+              {!product.fullWarranty && warrantyOptions.length > 0 && (
+                <div style={{ background: `linear-gradient(145deg, ${D.surface}, ${D.bg})`, border: `1px solid ${D.border}`, borderRadius: 20, padding: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: '0.875rem' }}>
+                    <Shield style={{ width: 14, height: 14, color: D.green }} />
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: D.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      {isAr ? 'ضمان إضافي' : 'Extended Warranty'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(warrantyOptions.length + 1, 3)}, 1fr)`, gap: '0.5rem' }}>
+                    <button
+                      onClick={() => setSelectedWarrantyIndex(-1)}
+                      style={{ padding: '0.75rem 0.5rem', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', background: selectedWarrantyIndex === -1 ? `${accentColor}10` : D.surfaceUp, border: `1.5px solid ${selectedWarrantyIndex === -1 ? accentColor : D.border}` }}
+                    >
+                      <div style={{ fontSize: '0.72rem', color: D.textSec }}>{isAr ? 'بدون' : 'None'}</div>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: D.textSec, marginTop: 2 }}>{isAr ? 'مجاني' : 'Free'}</div>
+                    </button>
+                    {warrantyOptions.map((opt, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedWarrantyIndex(idx)}
+                        style={{ padding: '0.75rem 0.5rem', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', position: 'relative', background: selectedWarrantyIndex === idx ? `${accentColor}10` : D.surfaceUp, border: `1.5px solid ${selectedWarrantyIndex === idx ? accentColor : D.border}` }}
+                      >
+                        {selectedWarrantyIndex === idx && (
+                          <div style={{ position: 'absolute', top: -7, right: -7, width: 18, height: 18, borderRadius: '50%', background: D.green, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Check style={{ width: 11, height: 11, color: 'white' }} />
+                          </div>
+                        )}
+                        <div style={{ fontSize: '0.7rem', color: D.textSec }}>{isAr ? opt.labelAr || opt.label : opt.label}</div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: D.green, marginTop: 2 }}>+{opt.price} {currencySymbol}</div>
+                        <div style={{ fontSize: '0.65rem', color: D.textMuted, marginTop: 1 }}>{opt.days} {isAr ? 'يوم' : 'days'}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Price + Quantity box ── */}
+              <div style={{ background: `linear-gradient(145deg, ${D.surface}, ${D.bg})`, border: `1px solid ${D.border}`, borderRadius: 20, padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {/* Price row */}
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '1rem' }}>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: D.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+                      {t.product.totalPrice}
+                    </div>
+                    {appliedCoupon ? (
+                      <div>
+                        <div style={{ fontSize: '1rem', color: D.textMuted, textDecoration: 'line-through', lineHeight: 1 }}>{subtotal.toFixed(2)} {currencySymbol}</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 900, color: D.green, lineHeight: 1, marginTop: 2, letterSpacing: '-0.03em' }}>{finalPrice.toFixed(2)} {currencySymbol}</div>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '2rem', fontWeight: 900, color: accentColor, lineHeight: 1, letterSpacing: '-0.03em' }}>{subtotal.toFixed(2)} {currencySymbol}</div>
+                    )}
+                  </div>
+
+                  {/* Quantity */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: D.surfaceUp, borderRadius: 12, border: `1px solid ${D.border}`, padding: '0.25rem' }}>
+                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={{ width: 34, height: 34, borderRadius: 9, border: 'none', background: 'transparent', cursor: 'pointer', color: D.textSec, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Minus style={{ width: 14, height: 14 }} />
+                    </button>
+                    <span style={{ fontSize: '1rem', fontWeight: 700, width: '1.75rem', textAlign: 'center', color: D.text }}>{quantity}</span>
+                    <button onClick={() => setQuantity(quantity + 1)} style={{ width: 34, height: 34, borderRadius: 9, border: 'none', background: 'transparent', cursor: 'pointer', color: D.textSec, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Plus style={{ width: 14, height: 14 }} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Coupon */}
+                {appliedCoupon ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', borderRadius: 10, background: D.greenBg, border: `1px solid ${D.greenBorder}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Tag style={{ width: 15, height: 15, color: D.green }} />
+                      <span style={{ fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: 700, color: D.green }}>{appliedCoupon.code}</span>
+                      <span style={{ fontSize: '0.75rem', color: D.green }}>(-{appliedCoupon.isPercent ? `${appliedCoupon.discount}%` : `${appliedCoupon.discount} ${currencySymbol}`})</span>
+                    </div>
+                    <button onClick={handleRemoveCoupon} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer' }}><X style={{ width: 15, height: 15, color: D.green }} /></button>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ display: 'flex', borderRadius: 10, border: `1px solid ${D.border}`, overflow: 'hidden' }}>
+                      <input
+                        type="text"
+                        placeholder={isAr ? 'كود الخصم' : 'Coupon code'}
+                        value={couponCode}
+                        onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }}
+                        style={{ flex: 1, minWidth: 0, padding: '0.65rem 0.75rem', background: D.surfaceUp, color: D.text, border: 'none', outline: 'none', fontSize: '0.85rem', fontFamily: 'monospace', textTransform: 'uppercase' }}
+                      />
+                      <button
+                        onClick={handleApplyCoupon}
+                        disabled={couponLoading || !couponCode.trim()}
+                        style={{ padding: '0.65rem 1rem', background: accentColor, color: 'white', fontSize: '0.82rem', fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0, opacity: (couponLoading || !couponCode.trim()) ? 0.5 : 1, fontFamily: 'inherit' }}
+                      >
+                        {couponLoading ? '...' : (isAr ? 'تطبيق' : 'Apply')}
+                      </button>
+                    </div>
+                    {couponError && <p style={{ fontSize: '0.75rem', color: D.red, marginTop: '0.375rem' }}>{couponError}</p>}
+                  </div>
+                )}
+
+                {/* Customer form */}
+                {showOrderForm && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                    <input type="text" placeholder={t.product.yourName} value={customerName} onChange={(e) => setCustomerName(e.target.value)} style={inputSt} />
+                    <input type="tel" placeholder={t.product.yourPhone} value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} style={inputSt} />
+                  </div>
+                )}
+
+                {/* CTA Buttons */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                  {/* WhatsApp */}
+                  <button
+                    onClick={handleWhatsAppOrder}
+                    disabled={!canPurchase}
+                    style={{
+                      width: '100%', padding: '0.9rem 1.5rem', borderRadius: 12, fontWeight: 700, fontSize: '0.9rem',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                      border: 'none', fontFamily: 'inherit', cursor: canPurchase ? 'pointer' : 'not-allowed',
+                      transition: 'all 0.15s',
+                      ...(canPurchase
+                        ? { background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: 'white', boxShadow: '0 6px 20px rgba(34,197,94,0.3)' }
+                        : { background: D.surfaceUp, color: D.textMuted }),
+                    }}
+                  >
+                    {!canPurchase
+                      ? <><Ban style={{ width: 18, height: 18 }} /> {isAr ? 'غير متوفر' : 'Out of Stock'}</>
+                      : <><MessageCircle style={{ width: 18, height: 18 }} /> {t.product.orderWhatsApp}</>
+                    }
+                  </button>
+
+                  {/* Add to Cart */}
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={!canPurchase}
+                    style={{
+                      width: '100%', padding: '0.9rem 1.5rem', borderRadius: 12, fontWeight: 700, fontSize: '0.9rem',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                      fontFamily: 'inherit', cursor: canPurchase ? 'pointer' : 'not-allowed',
+                      transition: 'all 0.15s',
+                      ...(addedToCart
+                        ? { background: `${D.green}15`, border: `1.5px solid ${D.green}`, color: D.green }
+                        : canPurchase
+                          ? { background: `${accentColor}15`, border: `1.5px solid ${accentColor}50`, color: accentColor }
+                          : { background: D.surfaceUp, border: `1.5px solid ${D.border}`, color: D.textMuted }),
+                    }}
+                  >
+                    {addedToCart
+                      ? <><Check style={{ width: 18, height: 18 }} /> {t.product.added}</>
+                      : <><ShoppingCart style={{ width: 18, height: 18 }} /> {t.product.addToCart}</>
+                    }
+                  </button>
+                </div>
+              </div>
+
+              {/* ── Quick info pills ── */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
+                {[
+                  { icon: Zap, label: isAr ? 'توصيل فوري' : 'Instant Delivery', color: '#fbbf24' },
+                  { icon: Shield, label: isAr ? 'أصلي 100%' : '100% Genuine', color: D.green },
+                  { icon: Star, label: isAr ? `${plansCount} خطط` : `${plansCount} Plans`, color: accentColor },
+                  { icon: MessageCircle, label: isAr ? 'دعم 24/7' : '24/7 Support', color: '#60a5fa' },
+                ].map((item, i) => (
+                  <div key={i} style={{
+                    padding: '0.75rem 0.875rem', borderRadius: 12,
+                    background: D.surface, border: `1px solid ${D.border}`,
+                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  }}>
+                    <item.icon style={{ width: 14, height: 14, color: item.color, flexShrink: 0 }} />
+                    <span style={{ fontSize: '0.75rem', color: D.textSec, fontWeight: 500 }}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── View all products link ── */}
+              <Link
+                href="/products"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                  padding: '0.75rem', borderRadius: 12, border: `1px solid ${D.border}`,
+                  color: D.textMuted, fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none',
+                  background: D.surface, transition: 'all 0.15s',
+                }}
+              >
+                <ExternalLink style={{ width: 13, height: 13 }} />
+                {isAr ? 'تصفح المنتجات' : 'Browse All Products'}
+              </Link>
+            </div>
+          </div>
+
+          {/* ── Responsive breakpoints ── */}
+          <style>{`
+            @media (max-width: 840px) {
+              .pdp-grid { grid-template-columns: 1fr !important; }
+            }
+          `}</style>
+        </div>
+      </div>
+    </>
+  );
 }

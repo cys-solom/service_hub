@@ -8,9 +8,12 @@ export async function GET() {
             where: { isActive: true },
             orderBy: { name: 'asc' },
         });
-        return NextResponse.json(categories);
-    } catch {
-        return NextResponse.json({ error: 'Failed to fetch categories' }, { status: 500 });
+        return NextResponse.json(categories, {
+            headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+        });
+    } catch (err) {
+        console.error('Categories API error:', err);
+        return NextResponse.json([], { status: 200 }); // Always return array!
     }
 }
 

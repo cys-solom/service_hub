@@ -4,27 +4,29 @@ import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
 import AnimatedLogo from '@/components/AnimatedLogo';
 
+const C = {
+    bg: '#0f1219', border: '#374151',
+    text: '#f9fafb', textSec: '#6b7280',
+    accent: '#a78bfa',
+};
+
 export default function Footer() {
     const { t } = useI18n();
 
+    const linkStyle: React.CSSProperties = { fontSize: '0.875rem', color: C.textSec, textDecoration: 'none' };
+
     return (
-        <footer className="bg-gray-50 dark:bg-gray-950 border-t border-gray-200/50 dark:border-gray-800/50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                    {/* Brand */}
-                    <div className="md:col-span-2">
-                        <div className="mb-4">
-                            <AnimatedLogo href="/" size="lg" />
-                        </div>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm max-w-md leading-relaxed">
-                            {t.footer.description}
-                        </p>
+        <footer style={{ background: C.bg, borderTop: `1px solid ${C.border}` }}>
+            <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '3rem 1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '2rem' }}>
+                    <div>
+                        <div style={{ marginBottom: '1rem' }}><AnimatedLogo href="/" size="lg" /></div>
+                        <p style={{ color: C.textSec, fontSize: '0.875rem', maxWidth: '28rem', lineHeight: 1.6 }}>{t.footer.description}</p>
                     </div>
 
-                    {/* Quick Links */}
                     <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white mb-4">{t.footer.quickLinks}</h4>
-                        <ul className="space-y-3">
+                        <h4 style={{ fontWeight: 600, color: C.text, marginBottom: '1rem' }}>{t.footer.quickLinks}</h4>
+                        <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             {[
                                 { href: '/', label: t.nav.home },
                                 { href: '/products', label: t.nav.products },
@@ -32,41 +34,36 @@ export default function Footer() {
                                 { href: '/cart', label: t.nav.cart },
                             ].map((link) => (
                                 <li key={link.href}>
-                                    <Link
-                                        href={link.href}
-                                        className="text-sm text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
-                                    >
-                                        {link.label}
-                                    </Link>
+                                    <Link href={link.href} style={linkStyle}
+                                        onMouseEnter={(e) => e.currentTarget.style.color = C.accent}
+                                        onMouseLeave={(e) => e.currentTarget.style.color = C.textSec}
+                                    >{link.label}</Link>
                                 </li>
                             ))}
                         </ul>
                     </div>
 
-                    {/* Legal */}
                     <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white mb-4">{t.footer.legal}</h4>
-                        <ul className="space-y-3">
+                        <h4 style={{ fontWeight: 600, color: C.text, marginBottom: '1rem' }}>{t.footer.legal}</h4>
+                        <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             {[
                                 { href: '/privacy', label: t.footer.privacy },
                                 { href: '/terms', label: t.footer.terms },
                                 { href: '/refund', label: t.footer.refund },
                             ].map((link) => (
                                 <li key={link.href}>
-                                    <Link
-                                        href={link.href}
-                                        className="text-sm text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
-                                    >
-                                        {link.label}
-                                    </Link>
+                                    <Link href={link.href} style={linkStyle}
+                                        onMouseEnter={(e) => e.currentTarget.style.color = C.accent}
+                                        onMouseLeave={(e) => e.currentTarget.style.color = C.textSec}
+                                    >{link.label}</Link>
                                 </li>
                             ))}
                         </ul>
                     </div>
                 </div>
 
-                <div className="mt-12 pt-8 border-t border-gray-200/50 dark:border-gray-800/50">
-                    <p className="text-sm text-gray-400 dark:text-gray-500 text-center">
+                <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: `1px solid ${C.border}` }}>
+                    <p style={{ fontSize: '0.875rem', color: C.textSec, textAlign: 'center' }}>
                         © {new Date().getFullYear()} Service Hub. {t.footer.rights}
                     </p>
                 </div>

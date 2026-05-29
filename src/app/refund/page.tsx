@@ -7,9 +7,9 @@ export default function RefundPage() {
 
     return (
         <div className="min-h-screen pt-8 pb-20 px-4">
-            <div className="max-w-3xl mx-auto prose dark:prose-invert prose-violet">
+            <div className="max-w-3xl mx-auto prose prose-violet" style={{ color: '#f9fafb' }}>
                 <h1>{t.refund.title}</h1>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">{t.refund.lastUpdated}</p>
+                <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>{t.refund.lastUpdated}</p>
 
                 <h2>{t.refund.s1Title}</h2>
                 <p>{t.refund.s1Desc}</p>

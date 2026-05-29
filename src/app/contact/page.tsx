@@ -1,23 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { MessageCircle, Mail, Phone } from 'lucide-react';
 import { Settings } from '@/lib/types';
 import { useI18n } from '@/lib/i18n';
-
 import { openWhatsApp } from '@/lib/whatsapp';
+
+const C = {
+    bg: '#141928', bgLight: '#0f1219',
+    border: '#374151', text: '#f9fafb', textSec: '#9ca3af',
+    accent: '#a78bfa', accentDim: '#7c3aed',
+    green: '#10b981',
+};
 
 export default function ContactPage() {
     const [settings, setSettings] = useState<Settings | null>(null);
     const { t } = useI18n();
 
-    useEffect(() => {
-        fetch('/api/settings')
-            .then((r) => r.json())
-            .then(setSettings)
-            .catch(() => { });
-    }, []);
+    useEffect(() => { fetch('/api/settings').then(r => r.json()).then(setSettings).catch(() => {}); }, []);
 
     const handleWhatsApp = () => {
         if (!settings?.whatsappPhone) return;
@@ -26,114 +26,63 @@ export default function ContactPage() {
         openWhatsApp(url);
     };
 
-    return (
-        <div className="min-h-screen pt-8 pb-20 px-4">
-            <div className="max-w-4xl mx-auto">
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
-                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-                        {t.contact.title}
-                    </h1>
-                    <p className="text-gray-500 dark:text-gray-400 max-w-xl mx-auto">
-                        {t.contact.subtitle}
-                    </p>
-                </motion.div>
+    const cardStyle: React.CSSProperties = { background: C.bg, border: `1px solid ${C.border}`, borderRadius: '1rem', padding: '1.5rem', transition: 'all 0.2s' };
+    const inputStyle: React.CSSProperties = { width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem', border: `1px solid ${C.border}`, background: C.bgLight, color: C.text, outline: 'none', fontSize: '0.875rem' };
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    return (
+        <div style={{ minHeight: '100vh', padding: '2rem 1rem 5rem' }}>
+            <div style={{ maxWidth: '56rem', margin: '0 auto' }}>
+                <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                    <h1 style={{ fontSize: '2rem', fontWeight: 700, color: C.text, marginBottom: '1rem' }}>{t.contact.title}</h1>
+                    <p style={{ color: C.textSec, maxWidth: '36rem', margin: '0 auto' }}>{t.contact.subtitle}</p>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                     {/* Contact Cards */}
-                    <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="space-y-6"
-                    >
-                        <button
-                            onClick={handleWhatsApp}
-                            className="w-full rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 p-6 text-start card-hover group"
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <button onClick={handleWhatsApp} style={{ ...cardStyle, textAlign: 'start', cursor: 'pointer', width: '100%' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = 'translateY(0)'; }}
                         >
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center mb-4 shadow-lg shadow-emerald-500/20">
-                                <MessageCircle className="w-7 h-7 text-white" />
+                            <div style={{ width: 56, height: 56, borderRadius: '1rem', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem', boxShadow: '0 4px 12px rgba(16,185,129,0.25)' }}>
+                                <MessageCircle style={{ width: 28, height: 28, color: 'white' }} />
                             </div>
-                            <h3 className="font-semibold text-gray-900 dark:text-white mb-1 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
-                                {t.contact.whatsapp}
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {t.contact.whatsappDesc}
-                            </p>
-                            <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-2 font-medium">
-                                {settings?.whatsappPhone || t.common.loading}
-                            </p>
+                            <h3 style={{ fontWeight: 600, color: C.text, marginBottom: '0.25rem' }}>{t.contact.whatsapp}</h3>
+                            <p style={{ fontSize: '0.875rem', color: C.textSec }}>{t.contact.whatsappDesc}</p>
+                            <p style={{ fontSize: '0.875rem', color: C.green, marginTop: '0.5rem', fontWeight: 500 }}>{settings?.whatsappPhone || t.common.loading}</p>
                         </button>
 
                         {[
-                            {
-                                icon: Mail,
-                                title: t.contact.email,
-                                desc: t.contact.emailDesc,
-                                info: 'support@servicehub.store',
-                                color: 'from-blue-500 to-cyan-500',
-                            },
-                            {
-                                icon: Phone,
-                                title: t.contact.phone,
-                                desc: t.contact.phoneDesc,
-                                info: settings?.whatsappPhone || t.common.loading,
-                                color: 'from-violet-500 to-purple-500',
-                            },
-                        ].map((item) => (
-                            <div
-                                key={item.title}
-                                className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 p-6 card-hover"
+                            { icon: Mail, title: t.contact.email, desc: t.contact.emailDesc, info: 'support@servicehub.store', gradient: 'linear-gradient(135deg, #3b82f6, #06b6d4)' },
+                            { icon: Phone, title: t.contact.phone, desc: t.contact.phoneDesc, info: settings?.whatsappPhone || t.common.loading, gradient: 'linear-gradient(135deg, #8b5cf6, #a855f7)' },
+                        ].map(item => (
+                            <div key={item.title} style={cardStyle}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = 'translateY(0)'; }}
                             >
-                                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-4 shadow-lg`}>
-                                    <item.icon className="w-7 h-7 text-white" />
+                                <div style={{ width: 56, height: 56, borderRadius: '1rem', background: item.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+                                    <item.icon style={{ width: 28, height: 28, color: 'white' }} />
                                 </div>
-                                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{item.title}</h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">{item.desc}</p>
-                                <p className="text-sm text-violet-600 dark:text-violet-400 mt-2 font-medium">{item.info}</p>
+                                <h3 style={{ fontWeight: 600, color: C.text, marginBottom: '0.25rem' }}>{item.title}</h3>
+                                <p style={{ fontSize: '0.875rem', color: C.textSec }}>{item.desc}</p>
+                                <p style={{ fontSize: '0.875rem', color: C.accent, marginTop: '0.5rem', fontWeight: 500 }}>{item.info}</p>
                             </div>
                         ))}
-                    </motion.div>
+                    </div>
 
                     {/* Contact Form */}
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 }}
-                    >
-                        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 p-6">
-                            <h3 className="font-semibold text-gray-900 dark:text-white mb-6">{t.contact.sendMessage}</h3>
-                            <form
-                                onSubmit={(e) => {
-                                    e.preventDefault();
-                                    handleWhatsApp();
-                                }}
-                                className="space-y-4"
-                            >
-                                <input
-                                    type="text"
-                                    placeholder={t.contact.yourNameLabel}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-violet-500 transition"
-                                />
-                                <input
-                                    type="email"
-                                    placeholder={t.contact.yourEmail}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-violet-500 transition"
-                                />
-                                <textarea
-                                    placeholder={t.contact.yourMessage}
-                                    rows={4}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-violet-500 transition resize-none"
-                                />
-                                <button
-                                    type="submit"
-                                    className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-2xl font-semibold flex items-center justify-center gap-2 shadow-lg shadow-violet-500/20 hover:shadow-violet-500/40 transition-all"
-                                >
-                                    <MessageCircle className="w-5 h-5" />
-                                    {t.contact.sendViaWhatsApp}
-                                </button>
-                            </form>
-                        </div>
-                    </motion.div>
+                    <div style={cardStyle}>
+                        <h3 style={{ fontWeight: 600, color: C.text, marginBottom: '1.5rem' }}>{t.contact.sendMessage}</h3>
+                        <form onSubmit={e => { e.preventDefault(); handleWhatsApp(); }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <input type="text" placeholder={t.contact.yourNameLabel} style={inputStyle} />
+                            <input type="email" placeholder={t.contact.yourEmail} style={inputStyle} />
+                            <textarea placeholder={t.contact.yourMessage} rows={4} style={{ ...inputStyle, resize: 'none' as const }} />
+                            <button type="submit" style={{ width: '100%', padding: '1rem', background: 'linear-gradient(135deg, #7c3aed, #6366f1)', color: 'white', borderRadius: '1rem', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 4px 15px rgba(124,58,237,0.3)' }}>
+                                <MessageCircle style={{ width: 20, height: 20 }} />
+                                {t.contact.sendViaWhatsApp}
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>

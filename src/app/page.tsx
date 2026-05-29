@@ -2,40 +2,26 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import AnimatedLogo from '@/components/AnimatedLogo';
-import OptimizedImage from '@/components/OptimizedImage';
+import ProductLogo from '@/components/ProductLogo';
 import {
-  ArrowRight,
-  Sparkles,
-  Shield,
-  Zap,
-  Clock,
-  MessageCircle,
-  ChevronDown,
-  ChevronUp,
-  Star,
-  Package,
-  CreditCard,
-  Send,
-  Ban,
+  ArrowRight, Sparkles, Shield, Zap, Clock, MessageCircle,
+  ChevronDown, ChevronUp, Star, Package, CreditCard, Send, Ban, Check,
+  Layers, TrendingUp, Grid3X3,
+  Bot, Palette, Music2, Code2, PenTool, Briefcase, Box, Leaf, Flame,
 } from 'lucide-react';
 import { Product, Category } from '@/lib/types';
 import { useI18n } from '@/lib/i18n';
 import { useSettings } from '@/lib/settings-context';
+import { getProductFeatureData, getProductAccentColor, getProductPriority } from '@/lib/product-features';
 
-const fadeInUp = {
-  initial: { opacity: 0, y: 30 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.6 },
-};
-
-const stagger = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
+const C = {
+  bg: '#141928', bgAlt: '#0d1120', surface: '#1a2035',
+  border: '#1f2a3d', borderLight: '#2d3a52',
+  text: '#f9fafb', textSec: '#9ca3af', textMuted: '#6b7280',
+  accent: '#a78bfa', accentSolid: '#8b5cf6', accentDim: '#7c3aed',
+  green: '#10b981', red: '#ef4444', yellow: '#fbbf24',
+  logoBg: '#ffffff',
 };
 
 export default function HomePage() {
@@ -45,6 +31,8 @@ export default function HomePage() {
   const [loaded, setLoaded] = useState(false);
   const { t, locale } = useI18n();
   const { currencySymbol, heroStat1Value, heroStat1Label, heroStat2Value, heroStat2Label, heroStat3Value, heroStat3Label } = useSettings();
+
+  const isAr = locale === 'ar';
 
   useEffect(() => {
     Promise.all([
@@ -58,8 +46,7 @@ export default function HomePage() {
   }, []);
 
   const featuredProducts = products.filter((p) => p.isFeatured);
-  const featured = featuredProducts.length > 0 ? featuredProducts : products.slice(0, 3);
-  const gridCols = featured.length === 1 ? 'md:grid-cols-1 max-w-md mx-auto' : featured.length === 2 ? 'md:grid-cols-2 max-w-3xl mx-auto' : 'md:grid-cols-3';
+  const featured = featuredProducts.length > 0 ? featuredProducts : products.slice(0, 6);
 
   const faqs = [
     { q: t.faq.q1, a: t.faq.a1 },
@@ -68,494 +55,585 @@ export default function HomePage() {
     { q: t.faq.q4, a: t.faq.a4 },
   ];
 
+  function getLowestPrice(product: Product) {
+    const prices = (product.variants || []).filter((v) => v.isActive && v.price > 0).map((v) => v.price);
+    return prices.length > 0 ? Math.min(...prices) : product.basePrice;
+  }
+
+  const sectionTitle: React.CSSProperties = {
+    fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)',
+    fontWeight: 800,
+    color: C.text,
+    marginBottom: '0.75rem',
+    textAlign: 'center',
+    letterSpacing: '-0.02em',
+  };
+  const sectionSub: React.CSSProperties = {
+    color: C.textSec,
+    textAlign: 'center',
+    maxWidth: '36rem',
+    margin: '0 auto',
+    lineHeight: 1.65,
+    fontSize: '1rem',
+  };
+
   return (
-    <div className="overflow-hidden">
-      {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center justify-center px-4">
-        {/* Background effects */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-500/20 rounded-full blur-[128px] animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-[128px] animate-pulse delay-1000" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[100px]" />
+    <div style={{ overflow: 'hidden' }}>
+
+      {/* ======== HERO ======== */}
+      <section style={{ position: 'relative', minHeight: '92vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 1rem' }}>
+        {/* Background glows */}
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', top: '10%', left: '15%', width: 500, height: 500, background: 'rgba(124,58,237,0.18)', borderRadius: '50%', filter: 'blur(120px)' }} />
+          <div style={{ position: 'absolute', bottom: '10%', right: '15%', width: 450, height: 450, background: 'rgba(99,102,241,0.15)', borderRadius: '50%', filter: 'blur(120px)' }} />
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 300, height: 300, background: 'rgba(167,139,250,0.08)', borderRadius: '50%', filter: 'blur(100px)' }} />
         </div>
 
-        <div className="relative max-w-5xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/10 border border-violet-500/20 mb-8">
-              <AnimatedLogo href="" size="sm" />
-            </div>
+        <div style={{ position: 'relative', maxWidth: '72rem', margin: '0 auto', textAlign: 'center', padding: '0 1rem' }}>
+          {/* Badge */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.45rem 1.1rem', borderRadius: '9999px', background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', marginBottom: '2.5rem' }}>
+            <AnimatedLogo href="" size="sm" />
+          </div>
 
-            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold leading-tight mb-6">
-              <span className="text-gray-900 dark:text-white">{t.hero.title.split(' ').slice(0, -2).join(' ')} </span>
-              <br />
-              <span className="bg-gradient-to-r from-violet-600 via-indigo-500 to-purple-600 bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
-                {t.hero.title.split(' ').slice(-2).join(' ')}
-              </span>
-            </h1>
+          {/* Title */}
+          <h1 style={{ fontSize: 'clamp(2.2rem, 6vw, 4.5rem)', fontWeight: 800, lineHeight: 1.12, marginBottom: '1.5rem', letterSpacing: '-0.03em' }}>
+            <span style={{ color: C.text }}>{t.hero.title.split(' ').slice(0, -2).join(' ')} </span>
+            <br />
+            <span style={{ background: 'linear-gradient(135deg, #a78bfa, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+              {t.hero.title.split(' ').slice(-2).join(' ')}
+            </span>
+          </h1>
 
-            <p className="text-lg sm:text-xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-              {t.hero.subtitle}
-            </p>
+          <p style={{ fontSize: '1.1rem', color: C.textSec, maxWidth: '38rem', margin: '0 auto 3rem', lineHeight: 1.7 }}>
+            {t.hero.subtitle}
+          </p>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 justify-center">
-              <Link
-                href="/products"
-                className="group px-8 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-2xl font-semibold text-lg shadow-xl shadow-violet-500/25 hover:shadow-violet-500/40 transition-all duration-300 flex items-center gap-2"
-              >
-                {t.hero.cta}
-                <ArrowRight className={`w-5 h-5 ${locale === 'ar' ? 'group-hover:-translate-x-1 rotate-180' : 'group-hover:translate-x-1'} transition-transform`} />
-              </Link>
-
-              <Link
-                href="/contact"
-                className="px-8 py-4 rounded-2xl font-semibold text-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-300"
-              >
-                {t.hero.contact}
-              </Link>
-            </div>
-          </motion.div>
+          {/* CTA Buttons */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem', justifyContent: 'center' }}>
+            <Link href="/products" style={{
+              padding: '0.9rem 2rem',
+              background: 'linear-gradient(135deg, #7c3aed, #6366f1)',
+              color: 'white',
+              borderRadius: '1rem',
+              fontWeight: 700,
+              fontSize: '1rem',
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              boxShadow: '0 8px 30px rgba(124,58,237,0.4)',
+              transition: 'all 0.2s',
+            }}>
+              {t.hero.cta}
+              <ArrowRight style={{ width: 18, height: 18, transform: isAr ? 'rotate(180deg)' : undefined }} />
+            </Link>
+            <Link href="/contact" style={{
+              padding: '0.9rem 2rem',
+              borderRadius: '1rem',
+              fontWeight: 600,
+              fontSize: '1rem',
+              border: `1px solid ${C.borderLight}`,
+              color: C.text,
+              textDecoration: 'none',
+              background: 'rgba(255,255,255,0.04)',
+              backdropFilter: 'blur(10px)',
+              transition: 'all 0.2s',
+            }}>
+              {t.hero.contact}
+            </Link>
+          </div>
 
           {/* Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="grid grid-cols-3 gap-8 mt-20 max-w-lg mx-auto"
-          >
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', maxWidth: '28rem', margin: '5rem auto 0' }}>
             {[
               { value: heroStat1Value, label: heroStat1Label },
               { value: heroStat2Value, label: heroStat2Label },
               { value: heroStat3Value, label: heroStat3Label },
-            ].map((stat, index) => (
-              <div key={`stat-${index}`} className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{stat.label}</div>
+            ].map((stat, i) => (
+              <div key={i} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: C.text, letterSpacing: '-0.02em' }}>{stat.value}</div>
+                <div style={{ fontSize: '0.8rem', color: C.textSec, marginTop: '0.3rem' }}>{stat.label}</div>
               </div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* Featured Products */}
-      <section className="py-24 px-4">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={stagger}
-            className="text-center mb-16"
-          >
-            <motion.h2
-              variants={fadeInUp}
-              className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4"
+      {/* ════════════════════════════════════════════
+          FEATURED SUBSCRIPTIONS — sh-card style
+      ════════════════════════════════════════════ */}
+      <section style={{ padding: '5rem 1.25rem', background: '#0a0a0a' }}>
+        <div style={{ maxWidth: '1380px', margin: '0 auto' }}>
+
+          {/* Section header */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
+            <div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', padding: '0.3rem 0.85rem', borderRadius: 999, background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', marginBottom: '0.75rem' }}>
+                <Star style={{ width: 12, height: 12, color: '#a78bfa', fill: '#a78bfa' }} />
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#a78bfa', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  {isAr ? 'الأكثر مبيعاً' : 'Top Picks'}
+                </span>
+              </div>
+              <h2 style={{ fontSize: 'clamp(1.4rem, 3vw, 1.9rem)', fontWeight: 800, color: '#E8E8E8', letterSpacing: '-0.025em', lineHeight: 1.15 }}>
+                {t.featured.title}
+              </h2>
+            </div>
+            <Link
+              href="/products"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#686868', fontSize: '0.82rem', fontWeight: 600, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.07)', padding: '0.45rem 1rem', borderRadius: 8, background: 'rgba(255,255,255,0.03)', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
             >
-              {t.featured.title}
-            </motion.h2>
-            <motion.p variants={fadeInUp} className="text-gray-500 dark:text-gray-400 max-w-xl mx-auto">
-              {t.featured.subtitle}
-            </motion.p>
-          </motion.div>
+              {t.featured.viewAll}
+              <ArrowRight style={{ width: 14, height: 14, transform: isAr ? 'rotate(180deg)' : undefined }} />
+            </Link>
+          </div>
 
-          <motion.div
-            key={loaded ? 'featured-loaded' : 'featured-skeleton'}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={stagger}
-            className="flex flex-col gap-3"
-          >
+          {/* Cards grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
             {loaded && featured.length > 0
-              ? featured.map((product) => (
-                <motion.div key={product.id} variants={fadeInUp}>
-                  <Link href={`/product/${product.slug}`}>
-                    <div className={`group flex items-start gap-5 p-5 rounded-2xl transition-all duration-300 hover:shadow-lg ${product.outOfStock ? 'opacity-60' : ''} bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-600/50 hover:border-violet-300 dark:hover:border-violet-500/60`}>
-                      {/* Logo */}
-                      <div className={`shrink-0 w-[72px] h-[72px] rounded-2xl bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 flex items-center justify-center p-3 overflow-hidden ${product.outOfStock ? 'grayscale' : ''}`}>
-                        {product.images?.[0] && !product.images[0].endsWith('.svg') ? (
-                          <OptimizedImage
-                            src={product.images[0]}
-                            alt={product.name}
-                            width={120}
-                            height={120}
-                            className="w-full h-full object-contain"
-                            fallbackIcon={false}
-                          />
-                        ) : null}
-                        {(!product.images?.[0] || product.images[0].endsWith('.svg')) && (
-                          <span className="text-2xl font-black text-violet-600 dark:text-violet-400 select-none">
-                            {(locale === 'ar' && product.nameAr ? product.nameAr : product.name).trim()[0]?.toUpperCase()}
-                          </span>
-                        )}
-                      </div>
+              ? [...featured].sort((a, b) => getProductPriority(a.name) - getProductPriority(b.name)).map((product) => {
+                const productName = isAr && product.nameAr ? product.nameAr : product.name;
+                const lowestPrice = getLowestPrice(product);
+                const accentColor = getProductAccentColor(product.name);
+                const featureData = getProductFeatureData(product.name);
+                const dbFeatures = isAr && product.featuresAr?.length ? product.featuresAr : product.features;
+                const builtinFeatures = isAr ? featureData?.ar : featureData?.en;
+                const features = (dbFeatures && dbFeatures.length > 0) ? dbFeatures : (builtinFeatures || []);
+                const hasWarranty = product.fullWarranty || product.variants?.some(v => v.warrantyDays > 0);
+                const activeVariants = product.variants?.filter(v => v.isActive) || [];
+                const primaryVariant = activeVariants.find(v => !v.outOfStock && v.price > 0) || activeVariants[0];
 
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className={`font-bold text-lg leading-snug mb-2.5 ${product.outOfStock ? 'text-gray-400' : 'text-gray-900 dark:text-white'} line-clamp-2`}>
-                          {locale === 'ar' && product.nameAr ? product.nameAr : product.name}
-                        </h3>
+                return (
+                  <article
+                    key={product.id}
+                    className="sh-card"
+                    style={{
+                      '--accent': accentColor,
+                      opacity: product.outOfStock ? 0.65 : 1,
+                    } as React.CSSProperties}
+                  >
+                    {/* Brand accent top line */}
+                    <div className="sh-card-line" style={{ background: accentColor }} />
 
-                        {/* Tags */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          {(product.fullWarranty || product.variants?.some(v => v.warrantyDays > 0)) && (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-xs font-semibold text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20">
-                              <Shield className="w-3.5 h-3.5" />
-                              {locale === 'ar' ? 'ضمان' : 'Warranty'}
-                            </span>
-                          )}
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-500/15 text-xs font-semibold text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-500/20">
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
-                            </svg>
-                            {locale === 'ar' ? 'سياسة استرجاع' : 'Refund Policy'}
-                          </span>
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 dark:bg-orange-500/15 text-xs font-semibold text-orange-700 dark:text-orange-400 border border-orange-100 dark:border-orange-500/20">
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
-                            </svg>
-                            {locale === 'ar' ? '60 دقيقة' : '60 min'}
-                          </span>
-                          {product.outOfStock && (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 dark:bg-red-500/15 text-xs font-semibold text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/20">
-                              <Ban className="w-3.5 h-3.5" />
-                              {t.productsPage.unavailable}
+                    <div className="sh-card-body">
+                      {/* Header: logo + name + PRIMARY DURATION UNDER NAME */}
+                      <div className="sh-card-head">
+                        <div className="sh-logo-wrap">
+                          <ProductLogo productName={product.name} dbImage={product.images?.[0]} size={44} bg="transparent" />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h3 className="sh-card-name">{productName}</h3>
+                          {/* ★ PRIMARY DURATION — under the name */}
+                          {primaryVariant?.title && (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              marginTop: '0.28rem',
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              color: accentColor,
+                              background: `${accentColor}18`,
+                              border: `1px solid ${accentColor}40`,
+                              borderRadius: 20,
+                              padding: '0.13rem 0.6rem',
+                              whiteSpace: 'nowrap',
+                              lineHeight: 1.6,
+                              gap: '0.3rem',
+                            }}>
+                              {primaryVariant.title}
+                              {primaryVariant.price > 0 && (
+                                <span style={{ opacity: 0.8, fontWeight: 600 }}>
+                                  · {primaryVariant.price} {currencySymbol}
+                                </span>
+                              )}
                             </span>
                           )}
                         </div>
+                        {product.isFeatured && (
+                          <Star style={{ width: 14, height: 14, color: '#fbbf24', fill: '#fbbf24', flexShrink: 0, alignSelf: 'flex-start' }} />
+                        )}
+                      </div>
+
+                      {/* Real features */}
+                      {features.length > 0 && (
+                        <ul className="sh-features">
+                          {features.slice(0, 4).map((f, i) => (
+                            <li key={i} className="sh-feature-row">
+                              <span className="sh-check" style={{ color: accentColor }}>✓</span>
+                              <span>{f.length > 48 ? f.slice(0, 48) + '…' : f}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+
+                      <div style={{ flex: 1 }} />
+
+                      {/* Footer */}
+                      <div className="sh-card-foot">
+                        <div className="sh-price-row">
+                          <div>
+                            <span className="sh-price-from">{isAr ? 'من' : 'from'}</span>
+                            <span className="sh-price" style={{ color: accentColor }}>
+                              {lowestPrice > 0 ? `${lowestPrice} ${currencySymbol}` : (isAr ? 'تواصل' : 'Contact')}
+                            </span>
+                          </div>
+                          <div className="sh-badges">
+                            {hasWarranty && <span className="sh-badge sh-badge--green"><Shield style={{ width: 9, height: 9 }} />{isAr ? 'ضمان' : 'Warranty'}</span>}
+                            {product.isFeatured && (
+                              <span className="sh-badge" style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.25)' }}>
+                                <Star style={{ width: 9, height: 9, fill: '#fbbf24' }} />
+                                {isAr ? 'مميز' : 'Top'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Link
+                          href={`/product/${product.slug}`}
+                          className="sh-btn sh-btn--primary"
+                          style={{
+                            background: `linear-gradient(135deg, ${accentColor}cc, ${accentColor})`,
+                            boxShadow: `0 4px 14px ${accentColor}35`,
+                            width: '100%',
+                          }}
+                        >
+                          {isAr ? 'اشترك الآن' : 'Subscribe Now'}
+                          <ArrowRight style={{ width: 13, height: 13, transform: isAr ? 'rotate(180deg)' : undefined }} />
+                        </Link>
                       </div>
                     </div>
-                  </Link>
-                </motion.div>
-              ))
-              : [1, 2, 3].map((i) => (
-                <div key={`skeleton-${i}`} className="rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="skeleton w-14 h-14 rounded-2xl" />
-                    <div className="flex-1">
-                      <div className="skeleton h-5 w-32 mb-2" />
-                      <div className="skeleton h-4 w-24" />
-                    </div>
-                  </div>
-                  <div className="skeleton h-4 w-full mb-2" />
-                  <div className="skeleton h-4 w-3/4 mb-4" />
-                  <div className="skeleton h-8 w-20" />
-                </div>
-              ))}
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-center mt-12"
-          >
-            <Link
-              href="/products"
-              className="inline-flex items-center gap-2 text-violet-600 dark:text-violet-400 font-semibold hover:gap-3 transition-all"
-            >
-              {t.featured.viewAll}
-              <ArrowRight className={`w-4 h-4 ${locale === 'ar' ? 'rotate-180' : ''}`} />
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Categories */}
-      <section className="py-24 px-4 bg-gray-50/50 dark:bg-gray-900/30">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={stagger}
-            className="text-center mb-16"
-          >
-            <motion.h2
-              variants={fadeInUp}
-              className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4"
-            >
-              {t.categories.title}
-            </motion.h2>
-            <motion.p variants={fadeInUp} className="text-gray-500 dark:text-gray-400">
-              {t.categories.subtitle}
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            key={loaded ? 'categories-loaded' : 'categories-skeleton'}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={stagger}
-            className="grid grid-cols-1 sm:grid-cols-3 gap-6"
-          >
-            {loaded && categories.length > 0
-              ? categories.map((cat) => {
-                const catIcons: Record<string, string> = {
-                  'ai-productivity': '🤖',
-                  'creative-tools': '🎨',
-                  entertainment: '🎵',
-                };
-                return (
-                  <motion.div key={cat.id} variants={fadeInUp}>
-                    <Link href={`/products?category=${cat.slug}`}>
-                      <div className="group rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 p-8 text-center card-hover">
-                        <div className="text-5xl mb-4">{catIcons[cat.slug] || '📦'}</div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
-                          {cat.name}
-                        </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                          {products.filter((p) => p.categoryId === cat.id).length} {t.categories.products}
-                        </p>
-                      </div>
-                    </Link>
-                  </motion.div>
+                  </article>
                 );
               })
-              : [1, 2, 3].map((i) => (
-                <div key={i} className="rounded-2xl border border-gray-200 dark:border-gray-800 p-8 text-center">
-                  <div className="skeleton h-12 w-12 mx-auto rounded-full mb-4" />
-                  <div className="skeleton h-5 w-32 mx-auto mb-2" />
-                  <div className="skeleton h-4 w-24 mx-auto" />
+              : [1,2,3,4,5,6].map((i) => (
+                <div key={i} style={{ background: 'linear-gradient(145deg,#101010,#0d0d0d)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 14, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 220 }}>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <div className="skeleton" style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <div className="skeleton" style={{ height: 14, width: '70%', marginBottom: 6 }} />
+                      <div className="skeleton" style={{ height: 11, width: '40%' }} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                    {[1,2,3].map(j => <div key={j} className="skeleton" style={{ height: 11, width: `${60 + j * 10}%` }} />)}
+                  </div>
+                  <div className="skeleton" style={{ height: 34, borderRadius: 8, marginTop: 'auto' }} />
                 </div>
               ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* Why Choose Us */}
-      <section className="py-24 px-4">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={stagger}
-            className="text-center mb-16"
-          >
-            <motion.h2
-              variants={fadeInUp}
-              className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4"
-            >
-              {t.why.title}
-            </motion.h2>
-            <motion.p variants={fadeInUp} className="text-gray-500 dark:text-gray-400 max-w-xl mx-auto">
-              {t.why.subtitle}
-            </motion.p>
-          </motion.div>
+      {/* ════════════════════════════════════════════
+          BROWSE BY CATEGORY — Visual premium cards
+      ════════════════════════════════════════════ */}
+      <section style={{ padding: '5rem 1.25rem', background: '#070707' }}>
+        <div style={{ maxWidth: '1380px', margin: '0 auto' }}>
 
-          <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={stagger}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-          >
-            {[
-              {
-                icon: Shield,
-                title: t.why.authentic,
-                desc: t.why.authenticDesc,
-                color: 'from-emerald-500 to-teal-500',
-              },
-              {
-                icon: Zap,
-                title: t.why.instant,
-                desc: t.why.instantDesc,
-                color: 'from-amber-500 to-orange-500',
-              },
-              {
-                icon: Clock,
-                title: t.why.support,
-                desc: t.why.supportDesc,
-                color: 'from-blue-500 to-cyan-500',
-              },
-              {
-                icon: CreditCard,
-                title: t.why.prices,
-                desc: t.why.pricesDesc,
-                color: 'from-violet-500 to-purple-500',
-              },
-            ].map((item) => (
-              <motion.div key={item.title} variants={fadeInUp}>
-                <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 p-6 h-full card-hover">
-                  <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-4 shadow-lg`}>
-                    <item.icon className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{item.title}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{item.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+          {/* Section header */}
+          <div style={{ marginBottom: '2rem' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', padding: '0.3rem 0.85rem', borderRadius: 999, background: 'rgba(27,222,214,0.08)', border: '1px solid rgba(27,222,214,0.2)', marginBottom: '0.75rem' }}>
+              <Grid3X3 style={{ width: 12, height: 12, color: '#1BDED6' }} />
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1BDED6', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                {isAr ? 'تصفح حسب الفئة' : 'Browse by Category'}
+              </span>
+            </div>
+            <h2 style={{ fontSize: 'clamp(1.4rem, 3vw, 1.9rem)', fontWeight: 800, color: '#E8E8E8', letterSpacing: '-0.025em', lineHeight: 1.15 }}>
+              {t.categories.title}
+            </h2>
+          </div>
 
-      {/* How To Order */}
-      <section className="py-24 px-4 bg-gray-50/50 dark:bg-gray-900/30">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={stagger}
-            className="text-center mb-16"
-          >
-            <motion.h2
-              variants={fadeInUp}
-              className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4"
-            >
-              {t.howTo.title}
-            </motion.h2>
-            <motion.p variants={fadeInUp} className="text-gray-500 dark:text-gray-400">
-              {t.howTo.subtitle}
-            </motion.p>
-          </motion.div>
+          {/* Category cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+            {loaded && categories.length > 0
+              ? categories.map((cat, catIdx) => {
+                const catProducts = products.filter((p) => p.categoryId === cat.id);
+                const catCount = catProducts.length;
 
-          <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={stagger}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-          >
-            {[
-              {
-                step: '01',
-                icon: Package,
-                title: t.howTo.step1,
-                desc: t.howTo.step1Desc,
-              },
-              {
-                step: '02',
-                icon: Send,
-                title: t.howTo.step2,
-                desc: t.howTo.step2Desc,
-              },
-              {
-                step: '03',
-                icon: Sparkles,
-                title: t.howTo.step3,
-                desc: t.howTo.step3Desc,
-              },
-            ].map((item) => (
-              <motion.div key={item.step} variants={fadeInUp}>
-                <div className="relative text-center">
-                  <div className="text-7xl font-black text-gray-100 dark:text-gray-800/50 absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 select-none">
-                    {item.step}
-                  </div>
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-violet-500/20">
-                      <item.icon className="w-8 h-8 text-white" />
+                // Per-category visual identity — SVG icons only, no emojis
+                type CatTheme = { Icon: React.ElementType; gradient: string; accent: string; glow: string };
+                const CAT_THEMES: Record<string, CatTheme> = {
+                  'ai-productivity': { Icon: Bot,      gradient: 'linear-gradient(135deg, #7c3aed20, #6366f115)', accent: '#a78bfa', glow: 'rgba(124,58,237,0.15)' },
+                  'creative-tools':  { Icon: Palette,  gradient: 'linear-gradient(135deg, #ec489920, #f9731615)', accent: '#f472b6', glow: 'rgba(236,72,153,0.15)' },
+                  'entertainment':   { Icon: Music2,   gradient: 'linear-gradient(135deg, #1db95420, #06b6d415)', accent: '#22c55e', glow: 'rgba(29,185,84,0.15)' },
+                  'coding':          { Icon: Code2,    gradient: 'linear-gradient(135deg, #3b82f620, #06b6d415)', accent: '#60a5fa', glow: 'rgba(59,130,246,0.15)' },
+                  'design':          { Icon: PenTool,  gradient: 'linear-gradient(135deg, #f5930820, #fbbf2415)', accent: '#fb923c', glow: 'rgba(245,147,8,0.15)' },
+                  'productivity':    { Icon: Briefcase,gradient: 'linear-gradient(135deg, #0ea5e920, #38bdf815)', accent: '#38bdf8', glow: 'rgba(14,165,233,0.15)' },
+                  'office-suite':    { Icon: Briefcase,gradient: 'linear-gradient(135deg, #0ea5e920, #06b6d415)', accent: '#38bdf8', glow: 'rgba(14,165,233,0.15)' },
+                };
+                const fallbackThemes: CatTheme[] = [
+                  { Icon: Box,   gradient: 'linear-gradient(135deg, #7c3aed20, #a855f715)', accent: '#c084fc', glow: 'rgba(124,58,237,0.15)' },
+                  { Icon: Leaf,  gradient: 'linear-gradient(135deg, #10b98120, #14b8a615)', accent: '#34d399', glow: 'rgba(16,185,129,0.15)' },
+                  { Icon: Flame, gradient: 'linear-gradient(135deg, #f5930820, #ef444415)', accent: '#fb923c', glow: 'rgba(245,147,8,0.15)' },
+                ];
+                const theme: CatTheme = CAT_THEMES[cat.slug] || fallbackThemes[catIdx % fallbackThemes.length];
+
+                // Show up to 4 product logos as preview
+                const previewProducts = catProducts.slice(0, 4);
+
+                return (
+                  <Link key={cat.id} href={`/products?category=${cat.slug}`} style={{ textDecoration: 'none' }}>
+                    <div
+                      style={{
+                        position: 'relative',
+                        background: `${theme.gradient}, linear-gradient(145deg, #101010, #0d0d0d)`,
+                        border: '1px solid rgba(255,255,255,0.07)',
+                        borderRadius: 18,
+                        padding: '1.5rem',
+                        overflow: 'hidden',
+                        transition: 'all 220ms cubic-bezier(0.34,1.56,0.64,1)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '1rem',
+                        minHeight: 180,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-4px) scale(1.01)';
+                        e.currentTarget.style.borderColor = `${theme.accent}50`;
+                        e.currentTarget.style.boxShadow = `0 20px 50px rgba(0,0,0,0.5), 0 6px 20px ${theme.glow}`;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      {/* Glow orb */}
+                      <div style={{ position: 'absolute', top: -20, right: -20, width: 120, height: 120, background: theme.glow, borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
+
+                      {/* Top row: icon + count badge */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                        <div style={{ width: 52, height: 52, borderRadius: 14, background: `${theme.accent}18`, border: `1px solid ${theme.accent}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 16px ${theme.glow}` }}>
+                          <theme.Icon style={{ width: 26, height: 26, color: theme.accent, strokeWidth: 1.75 }} />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0.25rem 0.65rem', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                          <Layers style={{ width: 11, height: 11, color: '#484848' }} />
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#686868' }}>{catCount}</span>
+                        </div>
+                      </div>
+
+                      {/* Name + description */}
+                      <div>
+                        <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#E8E8E8', marginBottom: '0.3rem', letterSpacing: '-0.02em' }}>
+                          {cat.name}
+                        </h3>
+                        <p style={{ fontSize: '0.78rem', color: '#484848', lineHeight: 1.5 }}>
+                          {catCount} {isAr ? t.categories.products : 'subscriptions available'}
+                        </p>
+                      </div>
+
+                      {/* Product logos preview strip */}
+                      {previewProducts.length > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: -6, marginTop: 'auto' }}>
+                          {previewProducts.map((p, pi) => (
+                            <div
+                              key={p.id}
+                              style={{
+                                width: 30, height: 30, borderRadius: '50%',
+                                border: '1.5px solid rgba(255,255,255,0.1)',
+                                background: '#0d0d0d',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                overflow: 'hidden',
+                                marginLeft: pi > 0 ? -8 : 0,
+                                zIndex: previewProducts.length - pi,
+                                position: 'relative',
+                              }}
+                            >
+                              <ProductLogo productName={p.name} dbImage={p.images?.[0]} size={30} bg="transparent" />
+                            </div>
+                          ))}
+                          {catCount > 4 && (
+                            <div style={{ width: 30, height: 30, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: -8, zIndex: 0, position: 'relative' }}>
+                              <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#686868' }}>+{catCount - 4}</span>
+                            </div>
+                          )}
+                          <div style={{ flex: 1 }} />
+                          {/* Arrow */}
+                          <div style={{ width: 30, height: 30, borderRadius: '50%', background: `${theme.accent}15`, border: `1px solid ${theme.accent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <ArrowRight style={{ width: 13, height: 13, color: theme.accent, transform: isAr ? 'rotate(180deg)' : undefined }} />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{item.title}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{item.desc}</p>
+                  </Link>
+                );
+              })
+              : [1,2,3,4].map((i) => (
+                <div key={i} style={{ background: '#101010', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 18, padding: '1.5rem', minHeight: 180, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="skeleton" style={{ width: 52, height: 52, borderRadius: 14 }} />
+                  <div>
+                    <div className="skeleton" style={{ height: 16, width: '60%', marginBottom: 8 }} />
+                    <div className="skeleton" style={{ height: 12, width: '40%' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 4, marginTop: 'auto' }}>
+                    {[1,2,3].map(j => <div key={j} className="skeleton" style={{ width: 30, height: 30, borderRadius: '50%' }} />)}
                   </div>
                 </div>
-              </motion.div>
-            ))}
-          </motion.div>
+              ))}
+          </div>
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="py-24 px-4">
-        <div className="max-w-3xl mx-auto">
-          <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={stagger}
-            className="text-center mb-16"
-          >
-            <motion.h2
-              variants={fadeInUp}
-              className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4"
-            >
-              {t.faq.title}
-            </motion.h2>
-          </motion.div>
+      {/* ======== WHY CHOOSE US ======== */}
+      <section style={{ padding: '6rem 1rem' }}>
+        <div style={{ maxWidth: '84rem', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <h2 style={sectionTitle}>{t.why.title}</h2>
+            <p style={sectionSub}>{t.why.subtitle}</p>
+          </div>
 
-          <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={stagger}
-            className="space-y-4"
-          >
-            {faqs.map((faq, i) => (
-              <motion.div
-                key={i}
-                variants={fadeInUp}
-                className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 overflow-hidden"
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1.25rem' }}>
+            {[
+              { icon: Shield, title: t.why.authentic, desc: t.why.authenticDesc, gradient: 'linear-gradient(135deg, #10b981, #14b8a6)', glow: 'rgba(16,185,129,0.2)' },
+              { icon: Zap, title: t.why.instant, desc: t.why.instantDesc, gradient: 'linear-gradient(135deg, #f59e0b, #f97316)', glow: 'rgba(245,158,11,0.2)' },
+              { icon: Clock, title: t.why.support, desc: t.why.supportDesc, gradient: 'linear-gradient(135deg, #3b82f6, #06b6d4)', glow: 'rgba(59,130,246,0.2)' },
+              { icon: CreditCard, title: t.why.prices, desc: t.why.pricesDesc, gradient: 'linear-gradient(135deg, #8b5cf6, #a855f7)', glow: 'rgba(139,92,246,0.2)' },
+            ].map((item) => (
+              <div
+                key={item.title}
+                style={{
+                  background: 'linear-gradient(160deg, #1a2035 0%, #111827 100%)',
+                  border: `1px solid ${C.border}`,
+                  borderRadius: '1.25rem',
+                  padding: '1.75rem',
+                  transition: 'all 0.25s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)';
+                  e.currentTarget.style.transform = 'translateY(-3px)';
+                  e.currentTarget.style.boxShadow = `0 16px 40px rgba(0,0,0,0.2), 0 6px 20px ${item.glow}`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = C.border;
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               >
+                <div style={{ width: 52, height: 52, borderRadius: '1rem', background: item.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem', boxShadow: `0 6px 16px ${item.glow}` }}>
+                  <item.icon style={{ width: 26, height: 26, color: 'white' }} />
+                </div>
+                <h3 style={{ fontWeight: 700, color: C.text, marginBottom: '0.5rem', fontSize: '1rem' }}>{item.title}</h3>
+                <p style={{ fontSize: '0.875rem', color: C.textSec, lineHeight: 1.6 }}>{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ======== HOW TO ORDER ======== */}
+      <section style={{ padding: '6rem 1rem', background: C.bgAlt }}>
+        <div style={{ maxWidth: '64rem', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
+            <h2 style={sectionTitle}>{t.howTo.title}</h2>
+            <p style={sectionSub}>{t.howTo.subtitle}</p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '2.5rem' }}>
+            {[
+              { step: '01', icon: Package, title: t.howTo.step1, desc: t.howTo.step1Desc },
+              { step: '02', icon: Send, title: t.howTo.step2, desc: t.howTo.step2Desc },
+              { step: '03', icon: Sparkles, title: t.howTo.step3, desc: t.howTo.step3Desc },
+            ].map((item, idx) => (
+              <div key={item.step} style={{ position: 'relative', textAlign: 'center' }}>
+                <div style={{ fontSize: '5rem', fontWeight: 900, color: 'rgba(255,255,255,0.03)', position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%) translateY(-0.5rem)', userSelect: 'none', lineHeight: 1 }}>
+                  {item.step}
+                </div>
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  <div style={{ width: 68, height: 68, borderRadius: '1.25rem', background: 'linear-gradient(135deg, #7c3aed, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', boxShadow: '0 10px 24px rgba(124,58,237,0.3)' }}>
+                    <item.icon style={{ width: 32, height: 32, color: 'white' }} />
+                  </div>
+                  <div style={{ display: 'inline-block', marginBottom: '0.75rem', background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: 999, padding: '0.2rem 0.7rem' }}>
+                    <span style={{ color: C.accent, fontSize: '0.75rem', fontWeight: 700 }}>{isAr ? `الخطوة ${idx + 1}` : `Step ${idx + 1}`}</span>
+                  </div>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: C.text, marginBottom: '0.5rem' }}>{item.title}</h3>
+                  <p style={{ fontSize: '0.875rem', color: C.textSec, lineHeight: 1.6 }}>{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ======== FAQ ======== */}
+      <section style={{ padding: '6rem 1rem' }}>
+        <div style={{ maxWidth: '48rem', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <h2 style={sectionTitle}>{t.faq.title}</h2>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+            {faqs.map((faq, i) => (
+              <div key={i} style={{
+                background: 'linear-gradient(160deg, #1a2035 0%, #111827 100%)',
+                border: `1px solid ${openFaq === i ? 'rgba(139,92,246,0.5)' : C.border}`,
+                borderRadius: '1rem',
+                overflow: 'hidden',
+                transition: 'border-color 0.2s',
+              }}>
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center justify-between p-6 text-start"
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '1.25rem 1.5rem',
+                    textAlign: 'start',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: C.text,
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    lineHeight: 1.5,
+                  }}
                 >
-                  <span className="font-semibold text-gray-900 dark:text-white pe-4">{faq.q}</span>
-                  {openFaq === i ? (
-                    <ChevronUp className="w-5 h-5 text-violet-500 shrink-0" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" />
-                  )}
+                  <span style={{ paddingInlineEnd: '1rem' }}>{faq.q}</span>
+                  {openFaq === i
+                    ? <ChevronUp style={{ width: 18, height: 18, color: C.accent, flexShrink: 0 }} />
+                    : <ChevronDown style={{ width: 18, height: 18, color: C.textMuted, flexShrink: 0 }} />}
                 </button>
                 {openFaq === i && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="px-6 pb-6"
-                  >
-                    <p className="text-gray-500 dark:text-gray-400 leading-relaxed">{faq.a}</p>
-                  </motion.div>
+                  <div style={{ padding: '0 1.5rem 1.5rem' }}>
+                    <div style={{ height: 1, background: C.border, marginBottom: '1rem' }} />
+                    <p style={{ color: C.textSec, lineHeight: 1.7, fontSize: '0.9rem' }}>{faq.a}</p>
+                  </div>
                 )}
-              </motion.div>
+              </div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* CTA / Contact */}
-      <section className="py-24 px-4">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="relative rounded-3xl overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-600 to-indigo-700" />
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIDAgNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-50" />
-            <div className="relative px-8 py-16 sm:px-16 text-center">
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                {t.cta.title}
-              </h2>
-              <p className="text-violet-100 max-w-xl mx-auto mb-8 leading-relaxed">
-                {t.cta.subtitle}
-              </p>
-              <div className="flex flex-col sm:flex-row items-center gap-4 justify-center">
-                <Link
-                  href="/products"
-                  className="px-8 py-4 bg-white text-violet-700 rounded-2xl font-semibold shadow-xl hover:bg-gray-50 transition-all duration-300 flex items-center gap-2"
-                >
-                  <Package className="w-5 h-5" />
+      {/* ======== CTA ======== */}
+      <section style={{ padding: '5rem 1rem 7rem' }}>
+        <div style={{ maxWidth: '56rem', margin: '0 auto' }}>
+          <div style={{ position: 'relative', borderRadius: '1.75rem', overflow: 'hidden' }}>
+            {/* Background */}
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #5b21b6, #4338ca, #7c3aed)' }} />
+            {/* Decorative orbs */}
+            <div style={{ position: 'absolute', top: '-40%', right: '-10%', width: 300, height: 300, background: 'rgba(255,255,255,0.05)', borderRadius: '50%', filter: 'blur(40px)' }} />
+            <div style={{ position: 'absolute', bottom: '-40%', left: '-10%', width: 250, height: 250, background: 'rgba(255,255,255,0.04)', borderRadius: '50%', filter: 'blur(40px)' }} />
+
+            <div style={{ position: 'relative', padding: '4.5rem 2rem', textAlign: 'center' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,255,255,0.12)', borderRadius: 999, padding: '0.3rem 0.9rem', marginBottom: '1.5rem' }}>
+                <Sparkles style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.8)' }} />
+                <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.78rem', fontWeight: 600 }}>{isAr ? 'ابدأ الآن' : 'Get Started Today'}</span>
+              </div>
+              <h2 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.25rem)', fontWeight: 800, color: 'white', marginBottom: '1rem', letterSpacing: '-0.02em' }}>{t.cta.title}</h2>
+              <p style={{ color: 'rgba(255,255,255,0.75)', maxWidth: '34rem', margin: '0 auto 2.5rem', lineHeight: 1.7, fontSize: '0.95rem' }}>{t.cta.subtitle}</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem', justifyContent: 'center' }}>
+                <Link href="/products" style={{ padding: '0.9rem 2rem', background: 'white', color: '#7c3aed', borderRadius: '1rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
+                  <Package style={{ width: 18, height: 18 }} />
                   {t.cta.browse}
                 </Link>
-                <Link
-                  href="/contact"
-                  className="px-8 py-4 rounded-2xl font-semibold border-2 border-white/30 text-white hover:bg-white/10 transition-all duration-300 flex items-center gap-2"
-                >
-                  <MessageCircle className="w-5 h-5" />
+                <Link href="/contact" style={{ padding: '0.9rem 2rem', borderRadius: '1rem', fontWeight: 600, border: '2px solid rgba(255,255,255,0.3)', color: 'white', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.08)' }}>
+                  <MessageCircle style={{ width: 18, height: 18 }} />
                   {t.cta.contact}
                 </Link>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
     </div>

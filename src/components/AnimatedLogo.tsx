@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 
 interface AnimatedLogoProps {
     href?: string;
@@ -10,60 +9,26 @@ interface AnimatedLogoProps {
 }
 
 export default function AnimatedLogo({ href = '/', size = 'md', className = '' }: AnimatedLogoProps) {
-    const sizeClasses = {
-        sm: 'text-lg',
-        md: 'text-xl',
-        lg: 'text-2xl',
-        xl: 'text-4xl',
-    };
-
-    const underlineSizes = {
-        sm: 'h-[2px]',
-        md: 'h-[2.5px]',
-        lg: 'h-[3px]',
-        xl: 'h-[4px]',
-    };
+    const fontSizes: Record<string, string> = { sm: '1.125rem', md: '1.25rem', lg: '1.5rem', xl: '2.25rem' };
+    const fs = fontSizes[size];
 
     const content = (
-        <motion.div
-            className={`inline-flex items-baseline gap-0 select-none group cursor-pointer font-english ${className}`}
-            style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+        <div
+            className={`inline-flex items-baseline gap-0 select-none cursor-pointer font-english ${className}`}
+            style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
         >
-            <div className="relative">
-                <span className={`${sizeClasses[size]} font-black tracking-tight text-gray-900 dark:text-white`}>
-                    S
-                </span>
-                <span className={`${sizeClasses[size]} font-extrabold tracking-tight logo-text-flow`}>
-                    ervice
-                </span>
-                <span className={`${sizeClasses[size]} font-black tracking-tight logo-hub-gradient`}>
-                    Hub
-                </span>
-
-                {/* Animated underline */}
-                <motion.div
-                    className={`absolute -bottom-1 left-0 right-0 ${underlineSizes[size]} rounded-full logo-underline-gradient`}
-                    initial={{ scaleX: 0, originX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                />
-
-                {/* Hover glow */}
-                <div className="absolute -inset-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 logo-glow -z-10" />
+            <div style={{ position: 'relative' }}>
+                <span style={{ fontSize: fs, fontWeight: 900, letterSpacing: '-0.025em', color: '#f9fafb' }}>S</span>
+                <span style={{ fontSize: fs, fontWeight: 800, letterSpacing: '-0.025em' }} className="logo-text-flow">ervice</span>
+                <span style={{ fontSize: fs, fontWeight: 900, letterSpacing: '-0.025em' }} className="logo-hub-gradient">Hub</span>
+                {/* Underline */}
+                <div className="logo-underline-gradient" style={{ position: 'absolute', bottom: -4, left: 0, right: 0, height: size === 'xl' ? 4 : size === 'lg' ? 3 : 2.5, borderRadius: 9999 }} />
             </div>
-        </motion.div>
+        </div>
     );
 
     if (href) {
-        return (
-            <Link href={href} className="inline-flex no-underline">
-                {content}
-            </Link>
-        );
+        return <Link href={href} style={{ display: 'inline-flex', textDecoration: 'none' }}>{content}</Link>;
     }
-
     return content;
 }

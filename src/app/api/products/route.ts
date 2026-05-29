@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic'; // allow runtime headers
+
 export async function GET() {
     try {
         const products = await prisma.product.findMany({
@@ -12,7 +14,6 @@ export async function GET() {
         const now = new Date();
         const parsed = products
             .filter((p) => {
-                // Filter out products that are unavailable until a future date
                 if (p.unavailableUntil && new Date(p.unavailableUntil) > now) {
                     return false;
                 }
@@ -20,15 +21,20 @@ export async function GET() {
             })
             .map((p) => ({
                 ...p,
-                images: JSON.parse(p.images),
-                features: JSON.parse(p.features),
-                featuresAr: p.featuresAr ? JSON.parse(p.featuresAr) : [],
-                warrantyOptions: p.warrantyOptions ? JSON.parse(p.warrantyOptions) : [],
+                images: JSON.parse(p.images as string),
+                features: JSON.parse(p.features as string),
+                featuresAr: p.featuresAr ? JSON.parse(p.featuresAr as string) : [],
+                warrantyOptions: p.warrantyOptions ? JSON.parse(p.warrantyOptions as string) : [],
             }));
 
-        return NextResponse.json(parsed);
-    } catch {
-        return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
+        return NextResponse.json(parsed, {
+            headers: {
+                // Cache for 2min at CDN/edge, serve stale for up to 10min while revalidating
+                'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
+            },
+        });
+    } catch (err) {
+        console.error('Products API error:', err);
+        return NextResponse.json([], { status: 200 }); // Return empty array not error object!
     }
 }
-

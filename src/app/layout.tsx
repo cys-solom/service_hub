@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Inter, Changa } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { CartProvider } from '@/lib/cart-context';
@@ -8,18 +7,7 @@ import { SettingsProvider } from '@/lib/settings-context';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { LayoutWrapper } from '@/components/LayoutWrapper';
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-});
-
-const changa = Changa({
-  subsets: ['arabic', 'latin'],
-  weight: ['200', '300', '400', '500', '600', '700', '800'],
-  variable: '--font-changa',
-  display: 'swap',
-});
+import PageTransition from '@/components/PageTransition';
 
 export const metadata: Metadata = {
   title: 'Service Hub - Premium Digital Subscriptions',
@@ -38,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${changa.variable} font-sans antialiased`}>
+    <html lang="en" className="dark" suppressHydrationWarning data-scroll-behavior="smooth">
+      <body className="font-sans antialiased">
         <ThemeProvider>
           <I18nProvider>
             <SettingsProvider>
@@ -51,8 +39,12 @@ export default function RootLayout({
                     <div className="animated-bg-orb animated-bg-orb--3" />
                   </div>
                   <Navbar />
-                  <main className="min-h-screen pt-16">{children}</main>
-                  <Footer />
+                  <main className="relative z-10 min-h-screen pt-16">
+                    <PageTransition>{children}</PageTransition>
+                  </main>
+                  <div className="relative z-10">
+                    <Footer />
+                  </div>
                 </LayoutWrapper>
               </CartProvider>
             </SettingsProvider>

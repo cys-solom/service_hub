@@ -6,31 +6,18 @@ import { useI18n } from '@/lib/i18n';
 
 export default function NotFound() {
     const { t, locale } = useI18n();
-
     return (
-        <div className="min-h-screen flex items-center justify-center px-4">
-            <div className="text-center">
-                <h1 className="text-8xl font-black text-gray-200 dark:text-gray-800 mb-4">404</h1>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                    {t.notFound.title}
-                </h2>
-                <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-md mx-auto">
-                    {t.notFound.description}
-                </p>
-                <div className="flex flex-col sm:flex-row items-center gap-4 justify-center">
-                    <Link
-                        href="/"
-                        className="px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-2xl font-semibold flex items-center gap-2"
-                    >
-                        <Home className="w-5 h-5" />
-                        {t.notFound.backHome}
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 1rem' }}>
+            <div style={{ textAlign: 'center' }}>
+                <h1 style={{ fontSize: '6rem', fontWeight: 900, color: '#1a2035', marginBottom: '1rem' }}>404</h1>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f9fafb', marginBottom: '1rem' }}>{t.notFound.title}</h2>
+                <p style={{ color: '#9ca3af', marginBottom: '2rem', maxWidth: '28rem', margin: '0 auto 2rem' }}>{t.notFound.description}</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem', justifyContent: 'center' }}>
+                    <Link href="/" style={{ padding: '0.75rem 1.5rem', background: 'linear-gradient(135deg, #7c3aed, #6366f1)', color: 'white', borderRadius: '1rem', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Home style={{ width: 20, height: 20 }} />{t.notFound.backHome}
                     </Link>
-                    <Link
-                        href="/products"
-                        className="px-6 py-3 rounded-2xl font-semibold border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-2"
-                    >
-                        <ArrowLeft className={`w-5 h-5 ${locale === 'ar' ? 'rotate-180' : ''}`} />
-                        {t.notFound.browseProducts}
+                    <Link href="/products" style={{ padding: '0.75rem 1.5rem', borderRadius: '1rem', fontWeight: 600, border: '1px solid #374151', color: '#f9fafb', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <ArrowLeft style={{ width: 20, height: 20, transform: locale === 'ar' ? 'rotate(180deg)' : undefined }} />{t.notFound.browseProducts}
                     </Link>
                 </div>
             </div>

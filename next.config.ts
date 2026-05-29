@@ -10,8 +10,13 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'en.wikipedia.org' },
       { protocol: 'https', hostname: 'i.postimg.cc' },
       { protocol: 'https', hostname: 'i.ibb.co' },
+      { protocol: 'https', hostname: 'logo.clearbit.com' },
+      { protocol: 'https', hostname: 'icon.horse' },
+      { protocol: 'https', hostname: 'www.google.com' },
+      { protocol: 'https', hostname: 't3.gstatic.com' },
     ],
   },
+
 };
 
 export default nextConfig;
