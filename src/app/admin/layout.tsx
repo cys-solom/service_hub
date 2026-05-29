@@ -7,7 +7,7 @@ import AnimatedLogo from '@/components/AnimatedLogo';
 import {
   LayoutDashboard, Package, FolderOpen,
   ShoppingBag, Tag, Settings, FileText,
-  LogOut, Menu, X, ChevronRight,
+  LogOut, Menu, X, ChevronRight, Gift,
 } from 'lucide-react';
 
 const A = {
@@ -22,6 +22,7 @@ const sidebarLinks = [
   { href: '/admin/categories', icon: FolderOpen,      label: 'Categories' },
   { href: '/admin/orders',     icon: ShoppingBag,     label: 'Orders'     },
   { href: '/admin/coupons',    icon: Tag,             label: 'Coupons'    },
+  { href: '/admin/bundles',    icon: Gift,            label: 'Bundles'    },
   { href: '/admin/content',    icon: FileText,        label: 'Content'    },
   { href: '/admin/settings',   icon: Settings,        label: 'Settings'   },
 ];

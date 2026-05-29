@@ -113,3 +113,27 @@ model Coupon {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
+
+model Bundle {
+  id           String   @id @default(cuid())
+  title        String
+  titleAr      String   @default("")
+  subtitle     String   @default("")
+  subtitleAr   String   @default("")
+  description  String   @default("")
+  descriptionAr String  @default("")
+  gradient     String   @default("linear-gradient(135deg, #7c3aed, #a855f7)")
+  savings      String   @default("Save 30%")
+  savingsAr    String   @default("وفّر 30%")
+  price        Float    @default(0)
+  originalPrice Float   @default(0)
+  tools        String   @default("[]")
+  features     String   @default("[]")
+  featuresAr   String   @default("[]")
+  isHot        Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
