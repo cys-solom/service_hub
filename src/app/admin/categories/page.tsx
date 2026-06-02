@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, X, Save, FolderOpen } from 'lucide-react';
+import { adminFetch, adminJsonFetch } from '@/lib/admin-fetch';
+
 
 interface CategoryData {
     id: string;
@@ -17,7 +19,7 @@ export default function AdminCategoriesPage() {
     const [editing, setEditing] = useState<CategoryData | null>(null);
     const [formData, setFormData] = useState({ name: '', slug: '', isActive: true });
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
+
 
     const fetchCategories = async () => {
         try {
@@ -39,9 +41,8 @@ export default function AdminCategoriesPage() {
         const url = editing ? `/api/categories/${editing.id}` : '/api/categories';
         const method = editing ? 'PUT' : 'POST';
 
-        await fetch(url, {
+        await adminJsonFetch(url, {
             method,
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify(formData),
         });
 
@@ -63,9 +64,8 @@ export default function AdminCategoriesPage() {
         const previousCategories = [...categories];
         setCategories(prev => prev.filter(c => c.id !== id));
         try {
-            const res = await fetch(`/api/categories/${id}`, {
+            const res = await adminFetch(`/api/categories/${id}`, {
                 method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) throw new Error('Failed');
         } catch {

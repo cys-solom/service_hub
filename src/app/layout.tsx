@@ -11,13 +11,19 @@ import PageTransition from '@/components/PageTransition';
 
 export const metadata: Metadata = {
   title: 'Service Hub - Premium Digital Subscriptions',
-  description: 'Get premium digital subscriptions at the best prices. ChatGPT, Gemini, Canva, LinkedIn Premium, and more.',
-  keywords: 'digital subscriptions, ChatGPT, Gemini, Canva, LinkedIn Premium, Spotify, Notion',
+  description: 'Buy ChatGPT, Gemini, Canva, LinkedIn Premium and more at the best prices. No account required — order in minutes via WhatsApp.',
+  keywords: 'digital subscriptions, ChatGPT, Gemini, Canva, LinkedIn Premium, Spotify, Notion, WhatsApp order',
   openGraph: {
     title: 'Service Hub - Premium Digital Subscriptions',
-    description: 'Get premium digital subscriptions at the best prices.',
+    description: 'Buy ChatGPT, Gemini, Canva, LinkedIn Premium and more. No account required — order via WhatsApp.',
     type: 'website',
   },
+  twitter: {
+    card: 'summary',
+    title: 'Service Hub - Premium Digital Subscriptions',
+    description: 'Buy ChatGPT, Gemini, Canva & more. No account required — order via WhatsApp.',
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({

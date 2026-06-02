@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { authenticateRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-function authCheck(req: NextRequest) {
-  const auth = req.headers.get('authorization') || '';
-  const token = auth.replace('Bearer ', '').trim();
-  if (!token) return false;
-  // Basic: same token stored in localStorage
-  return token.length > 10;
-}
-
 // GET all bundles (admin view - includes inactive)
 export async function GET(req: NextRequest) {
-  if (!authCheck(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = authenticateRequest(req);
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const bundles = await prisma.bundle.findMany({
       orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
@@ -32,7 +27,9 @@ export async function GET(req: NextRequest) {
 
 // POST create new bundle
 export async function POST(req: NextRequest) {
-  if (!authCheck(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = authenticateRequest(req);
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const body = await req.json();
     const bundle = await prisma.bundle.create({

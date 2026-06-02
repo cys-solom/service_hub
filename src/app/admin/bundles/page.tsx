@@ -3,14 +3,16 @@
 import { useEffect, useState } from 'react';
 import {
   Gift, Plus, Pencil, Trash2, Save, X, Flame,
-  ChevronDown, ChevronUp, Eye, EyeOff, GripVertical,
+  Eye, EyeOff,
 } from 'lucide-react';
 import ProductLogo from '@/components/ProductLogo';
+import { adminFetch, adminJsonFetch } from '@/lib/admin-fetch';
+
 
 const A = {
   bg: '#06070a', surface: '#0f1117', card: '#141928',
   border: 'rgba(255,255,255,0.07)', borderLight: 'rgba(255,255,255,0.12)',
-  text: '#E8E8E8', textSec: '#686868', accent: '#a78bfa', accentSolid: '#7c3aed',
+  text: '#E8E8E8', textSec: '#9a9a9a', accent: '#a78bfa', accentSolid: '#7c3aed',  /* textSec: was #686868 */
 };
 
 interface BundleTool {
@@ -61,10 +63,6 @@ const emptyBundle = (): Omit<Bundle, 'id'> => ({
   isHot: false, isActive: true, displayOrder: 0,
 });
 
-function authHeaders() {
-  const token = localStorage.getItem('admin_token') || '';
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-}
 
 export default function AdminBundlesPage() {
   const [bundles, setBundles] = useState<Bundle[]>([]);
@@ -82,7 +80,7 @@ export default function AdminBundlesPage() {
   async function loadBundles() {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/bundles', { headers: authHeaders() });
+      const res = await adminFetch('/api/admin/bundles');
       const data = await res.json();
       setBundles(Array.isArray(data) ? data : []);
     } finally {
@@ -123,15 +121,13 @@ export default function AdminBundlesPage() {
         featuresAr: form.featuresAr.filter(Boolean),
       };
       if (editId) {
-        await fetch(`/api/admin/bundles/${editId}`, {
+        await adminJsonFetch(`/api/admin/bundles/${editId}`, {
           method: 'PUT',
-          headers: authHeaders(),
           body: JSON.stringify(payload),
         });
       } else {
-        await fetch('/api/admin/bundles', {
+        await adminJsonFetch('/api/admin/bundles', {
           method: 'POST',
-          headers: authHeaders(),
           body: JSON.stringify(payload),
         });
       }
@@ -143,15 +139,14 @@ export default function AdminBundlesPage() {
   }
 
   async function handleDelete(id: string) {
-    await fetch(`/api/admin/bundles/${id}`, { method: 'DELETE', headers: authHeaders() });
+    await adminFetch(`/api/admin/bundles/${id}`, { method: 'DELETE' });
     setDeleteConfirm(null);
     loadBundles();
   }
 
   async function toggleActive(b: Bundle) {
-    await fetch(`/api/admin/bundles/${b.id}`, {
+    await adminJsonFetch(`/api/admin/bundles/${b.id}`, {
       method: 'PUT',
-      headers: authHeaders(),
       body: JSON.stringify({ ...b, isActive: !b.isActive }),
     });
     loadBundles();

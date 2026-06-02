@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Save, Check, Globe, ChevronDown, ChevronUp } from 'lucide-react';
 import { defaultEn, defaultAr } from '@/lib/i18n';
+import { adminJsonFetch } from '@/lib/admin-fetch';
+
 
 // Section config for the admin UI
 const contentSections = [
@@ -325,7 +327,6 @@ export default function AdminContentPage() {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
 
     useEffect(() => {
         fetch('/api/settings')
@@ -346,9 +347,8 @@ export default function AdminContentPage() {
 
     const handleSave = async () => {
         setSaving(true);
-        await fetch('/api/settings', {
+        await adminJsonFetch('/api/settings', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({
                 contentEn: JSON.stringify(contentEn),
                 contentAr: JSON.stringify(contentAr),

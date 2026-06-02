@@ -18,7 +18,7 @@ import { getProductFeatureData, getProductAccentColor, getProductPriority } from
 const C = {
   bg: '#141928', bgAlt: '#0d1120', surface: '#1a2035',
   border: '#1f2a3d', borderLight: '#2d3a52',
-  text: '#f9fafb', textSec: '#9ca3af', textMuted: '#6b7280',
+  text: '#f9fafb', textSec: '#b0b6c3', textMuted: '#848d9e',  /* improved: was #9ca3af / #6b7280 */
   accent: '#a78bfa', accentSolid: '#8b5cf6', accentDim: '#7c3aed',
   green: '#10b981', red: '#ef4444', yellow: '#fbbf24',
   logoBg: '#ffffff',

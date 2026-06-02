@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Check, ShoppingCart, MessageCircle,
-  Plus, Minus, Ban, Tag, X, Shield, Zap, Star, ExternalLink,
+  Plus, Minus, Ban, Tag, X, Shield, Star, ExternalLink,
 } from 'lucide-react';
 import { useCart } from '@/lib/cart-context';
-import { Product, ProductVariant, Settings, WarrantyOption } from '@/lib/types';
-import { buildWhatsAppMessage, generateWhatsAppUrl, generateOrderCode, openWhatsApp } from '@/lib/whatsapp';
+import { Product, ProductVariant, WarrantyOption } from '@/lib/types';
+import { buildWhatsAppMessage, generateWhatsAppUrl, openWhatsApp } from '@/lib/whatsapp';
 import { useI18n } from '@/lib/i18n';
 import { useSettings } from '@/lib/settings-context';
 import ProductLogo from '@/components/ProductLogo';
@@ -25,8 +25,8 @@ const D = {
   border: 'rgba(255,255,255,0.07)',
   borderMid: 'rgba(255,255,255,0.10)',
   text: '#E8E8E8',
-  textSec: '#686868',
-  textMuted: '#404040',
+  textSec: '#9a9a9a',    /* was #686868 — improved contrast */
+  textMuted: '#7a7a7a',  /* was #404040 — barely visible, now readable */
   green: '#22c55e',
   greenBg: 'rgba(34,197,94,0.10)',
   greenBorder: 'rgba(34,197,94,0.20)',
@@ -41,7 +41,6 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   const { addItem } = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
-  const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -58,21 +57,20 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   } | null>(null);
 
   const { t, locale } = useI18n();
-  const { currencySymbol, currency } = useSettings();
+  const { currencySymbol, currency, whatsappPhone } = useSettings(); /* whatsappPhone from context — no extra fetch */
   const isAr = locale === 'ar';
 
   useEffect(() => {
-    Promise.all([
-      fetch(`/api/products/slug/${slug}`).then((r) => r.json()),
-      fetch('/api/settings').then((r) => r.json()),
-    ]).then(([prod, sett]) => {
-      if (prod.error) { router.push('/products'); return; }
-      setProduct(prod);
-      setSettings(sett);
-      const inStock = prod.variants?.find((v: ProductVariant) => !v.outOfStock);
-      setSelectedVariant(inStock || prod.variants?.[0] || null);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    fetch(`/api/products/slug/${slug}`)
+      .then((r) => r.json())
+      .then((prod) => {
+        if (prod.error) { router.push('/products'); return; }
+        setProduct(prod);
+        const inStock = prod.variants?.find((v: ProductVariant) => !v.outOfStock);
+        setSelectedVariant(inStock || prod.variants?.[0] || null);
+        setLoading(false);
+      })
+      .catch(() => { setLoading(false); router.push('/products'); });
   }, [slug, router]);
 
   /* ── Derived values ── */
@@ -129,18 +127,70 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
   };
 
   const handleWhatsAppOrder = async () => {
-    if (!product || !selectedVariant || !settings) return;
+    if (!product || !selectedVariant) return;
     if (!customerName || !customerPhone) { setShowOrderForm(true); return; }
-    const orderCode = generateOrderCode();
+
     try {
-      await fetch('/api/orders', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerName, customerPhone, items: [{ productId: product.id, productName: product.name, variant: selectedVariant.title, price: selectedVariant.price, quantity }], totalPrice: finalPrice, couponCode: appliedCoupon?.code || null }),
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerName,
+          customerPhone,
+          items: [{
+            productId:    product.id,
+            variantId:    selectedVariant.id,   // required for server-side price lookup
+            productName:  product.name,
+            variant:      selectedVariant.title,
+            quantity,
+            warrantyIndex: selectedWarrantyIndex, // -1 = no warranty
+            // price intentionally omitted — server computes from DB
+          }],
+          couponCode: appliedCoupon?.code || null,
+          // totalPrice intentionally omitted
+        }),
       });
-    } catch (err) { console.error('Failed to save order', err); }
-    const message = buildWhatsAppMessage({ orderCode, customerName, customerPhone, items: [{ productName: product.name, variant: selectedVariant.title, price: selectedVariant.price, quantity }], totalPrice: finalPrice, currency: currency || 'EGP', locale });
-    openWhatsApp(generateWhatsAppUrl(settings.whatsappPhone, message));
-    setTimeout(() => router.push(`/thank-you?code=${orderCode}`), 500);
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Show error inline — currently using couponError state as general error display
+        setCouponError(data.error || (isAr ? 'حدث خطأ. حاول مرة أخرى.' : 'An error occurred. Please try again.'));
+        return;
+      }
+
+      // ── Build WhatsApp message from server-computed trusted data ──────────
+      const trustedItems = Array.isArray(data.items) ? data.items : [{
+        productName: product.name,
+        variant:     selectedVariant.title,
+        price:       selectedVariant.price,
+        quantity,
+      }];
+      const trustedTotal = typeof data.total === 'number' ? data.total : finalPrice;
+      const orderCode    = data.orderCode;
+
+      const message = buildWhatsAppMessage({
+        orderCode,
+        customerName,
+        customerPhone,
+        items: trustedItems.map((i: { productName: string; variant: string; price: number; quantity: number }) => ({
+          productName: i.productName,
+          variant:     i.variant,
+          price:       i.price,
+          quantity:    i.quantity,
+        })),
+        totalPrice: trustedTotal,
+        currency:   currency || 'EGP',
+        locale,
+      });
+
+      openWhatsApp(generateWhatsAppUrl(whatsappPhone, message));
+      setTimeout(() => router.push(`/thank-you?code=${orderCode}`), 500);
+
+    } catch (err) {
+      console.error('Failed to place order', err);
+      setCouponError(isAr ? 'فشل إرسال الطلب. تحقق من الاتصال.' : 'Failed to send order. Check your connection.');
+    }
   };
 
   /* ── Full skeleton loading \u2014 mirrors actual layout ── */
@@ -333,7 +383,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
                           </span>
                         ) : (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0.18rem 0.6rem', borderRadius: 6, fontSize: '0.7rem', fontWeight: 700, background: D.greenBg, color: D.green, border: `1px solid ${D.greenBorder}` }}>
-                            <Zap style={{ width: 10, height: 10 }} /> {isAr ? 'متوفر' : 'In Stock'}
+                            <Check style={{ width: 10, height: 10 }} /> {isAr ? 'متوفر' : 'In Stock'}
                           </span>
                         )}
                       </div>
@@ -609,10 +659,10 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
               {/* ── Quick info pills ── */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
                 {[
-                  { icon: Zap, label: isAr ? 'توصيل فوري' : 'Instant Delivery', color: '#fbbf24' },
-                  { icon: Shield, label: isAr ? 'أصلي 100%' : '100% Genuine', color: D.green },
-                  { icon: Star, label: isAr ? `${plansCount} خطط` : `${plansCount} Plans`, color: accentColor },
-                  { icon: MessageCircle, label: isAr ? 'دعم 24/7' : '24/7 Support', color: '#60a5fa' },
+                  { icon: Shield, label: isAr ? 'بدون حساب' : 'No Account Needed', color: D.green },
+                  { icon: Shield, label: isAr ? 'أصلي 100%' : '100% Genuine', color: accentColor },
+                  { icon: Star, label: isAr ? `${plansCount} خطط` : `${plansCount} Plans`, color: '#fbbf24' },
+                  { icon: MessageCircle, label: isAr ? 'دعم عبر واتساب' : 'WhatsApp Support', color: '#60a5fa' },
                 ].map((item, i) => (
                   <div key={i} style={{
                     padding: '0.75rem 0.875rem', borderRadius: 12,

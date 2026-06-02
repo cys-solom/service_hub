@@ -6,11 +6,13 @@ import {
   ShoppingBag, Package, DollarSign, FolderOpen,
   TrendingUp, Clock, Calendar, CalendarDays, BarChart3, ArrowUpRight,
 } from 'lucide-react';
+import { adminFetch } from '@/lib/admin-fetch';
+
 
 const A = {
   bg: '#06070a', surface: '#0f1117', card: '#141928',
   border: 'rgba(255,255,255,0.07)', text: '#E8E8E8',
-  textSec: '#9ca3af', textMuted: '#686868', accent: '#a78bfa',
+  textSec: '#b0b6c3', textMuted: '#7a7a7a', accent: '#a78bfa',  /* textMuted: was #686868 */
 };
 
 interface DashboardData {
@@ -39,12 +41,12 @@ export default function AdminDashboard() {
   const { currencySymbol } = useSettings();
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    fetch('/api/admin/dashboard', { headers: { Authorization: `Bearer ${token}` } })
+    adminFetch('/api/admin/dashboard')
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
 
   const chartData = revenueTab === 'daily' ? (data?.dailyRevenue || []) : (data?.monthlyRevenue || []);
   const maxAmount = Math.max(...chartData.map((d) => d.amount), 1);

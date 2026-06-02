@@ -20,7 +20,7 @@ const defaultEn = {
     // Hero
     hero: {
         title: 'Power Up With Premium Tools',
-        subtitle: 'Get access to ChatGPT, Gemini, Canva, LinkedIn Premium and more — at unbeatable prices. Instant delivery via WhatsApp.',
+        subtitle: 'Get access to ChatGPT, Gemini, Canva, LinkedIn Premium and more — at unbeatable prices. Order via WhatsApp — no account required.',
         cta: 'Browse Subscriptions',
         contact: 'Contact Us',
     },
@@ -135,16 +135,24 @@ const defaultEn = {
         namePlaceholder: 'Your Name *',
         phonePlaceholder: 'Your Phone *',
         notesPlaceholder: 'Notes (optional)',
-        sendOrder: 'Send Order to WhatsApp',
+        sendOrder: 'Send Order via WhatsApp',
         sending: 'Sending...',
+        // Trust microcopy
+        noAccount: 'No account required',
+        deliveryInfo: 'Delivery confirmed via WhatsApp after payment',
+        orderCodeSaved: 'Your order code will appear on the next page',
+        priceGuarantee: 'Prices calculated & verified by our system',
+        supportViaWhatsApp: 'Support available via WhatsApp',
     },
     // Thank you
     thankYou: {
         title: 'Thank You! 🎉',
-        subtitle: 'Your order has been sent to WhatsApp. Our team will process it shortly.',
-        orderCode: 'Order Code',
+        subtitle: 'Your order has been placed successfully. Please send the WhatsApp message to confirm — our team will activate your subscription after payment.',
+        orderCode: 'Your Order Code',
+        orderCodeHint: 'Save this code — share it with support if you need help.',
         continueShopping: 'Continue Shopping',
         backHome: 'Back to Home',
+        whatsappFallback: 'Open WhatsApp & Send Order',
     },
     // Contact
     contact: {
@@ -269,7 +277,7 @@ const defaultAr: Translations = {
     },
     hero: {
         title: 'اشتراكات رقمية بأفضل الأسعار',
-        subtitle: 'احصل على ChatGPT, Gemini, Canva, LinkedIn Premium والمزيد — بأسعار لا تُقاوَم. توصيل فوري عبر واتساب.',
+        subtitle: 'احصل على ChatGPT, Gemini, Canva, LinkedIn Premium والمزيد — بأسعار لا تُقاوَم. اطلب عبر واتساب بدون إنشاء حساب.',
         cta: 'تصفح الاشتراكات',
         contact: 'تواصل معنا',
     },
@@ -377,13 +385,21 @@ const defaultAr: Translations = {
         notesPlaceholder: 'ملاحظات (اختياري)',
         sendOrder: 'إرسال الطلب عبر واتساب',
         sending: 'جاري الإرسال...',
+        // Trust microcopy
+        noAccount: 'بدون إنشاء حساب',
+        deliveryInfo: 'التسليم يتم عبر واتساب بعد التأكيد',
+        orderCodeSaved: 'سيظهر لك كود الطلب في الصفحة التالية',
+        priceGuarantee: 'الأسعار محسوبة ومضمونة من النظام',
+        supportViaWhatsApp: 'الدعم متاح عبر واتساب',
     },
     thankYou: {
-        title: '!شكراً لك 🎉',
-        subtitle: 'تم إرسال طلبك عبر واتساب. سيقوم فريقنا بمعالجته قريباً.',
-        orderCode: 'رمز الطلب',
+        title: '🎉 شكراً لك!',
+        subtitle: 'تم تسجيل طلبك بنجاح. أرسل رسالة واتساب لتأكيد الطلب — سيقوم فريقنا بتفعيل اشتراكك بعد الدفع.',
+        orderCode: 'كود طلبك',
+        orderCodeHint: 'احفظ هذا الكود — شاركه مع الدعم إذا احتجت مساعدة.',
         continueShopping: 'متابعة التسوق',
         backHome: 'العودة للرئيسية',
+        whatsappFallback: 'افتح واتساب وأرسل الطلب',
     },
     contact: {
         title: 'تواصل معنا',

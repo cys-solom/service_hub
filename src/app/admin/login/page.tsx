@@ -34,7 +34,9 @@ export default function AdminLoginPage() {
                 return;
             }
 
-            localStorage.setItem('admin_token', data.token);
+            // Cookie is set by the server (httpOnly) — no localStorage needed.
+            // Clean up any legacy token that may exist from previous versions.
+            try { localStorage.removeItem('admin_token'); } catch { /* SSR-safe */ }
             router.push('/admin');
         } catch {
             setError('Something went wrong. Please try again.');

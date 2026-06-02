@@ -15,6 +15,8 @@ import {
     Check,
 } from 'lucide-react';
 import { useSettings } from '@/lib/settings-context';
+import { adminFetch, adminJsonFetch } from '@/lib/admin-fetch';
+
 
 interface CouponData {
     id: string;
@@ -45,13 +47,11 @@ export default function AdminCouponsPage() {
         isActive: true,
     });
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
+
 
     const fetchCoupons = async () => {
         try {
-            const res = await fetch('/api/coupons', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await adminFetch('/api/coupons');
             const data = await res.json();
             setCoupons(Array.isArray(data) ? data : []);
         } catch {
@@ -67,9 +67,8 @@ export default function AdminCouponsPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const res = await fetch('/api/coupons', {
+            const res = await adminJsonFetch('/api/coupons', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({
                     code: formData.code.trim(),
                     discount: parseFloat(formData.discount) || 0,
@@ -97,9 +96,8 @@ export default function AdminCouponsPage() {
     const handleToggleActive = async (coupon: CouponData) => {
         setCoupons(prev => prev.map(c => c.id === coupon.id ? { ...c, isActive: !c.isActive } : c));
         try {
-            await fetch(`/api/coupons/${coupon.id}`, {
+            await adminJsonFetch(`/api/coupons/${coupon.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ isActive: !coupon.isActive }),
             });
         } catch {
@@ -109,10 +107,7 @@ export default function AdminCouponsPage() {
 
     const handleDelete = async (id: string) => {
         if (!confirm('Delete this coupon?')) return;
-        await fetch(`/api/coupons/${id}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        await adminFetch(`/api/coupons/${id}`, { method: 'DELETE' });
         fetchCoupons();
     };
 

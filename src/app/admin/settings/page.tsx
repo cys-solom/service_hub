@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Save, Settings as SettingsIcon, Check, Globe, Store, CreditCard, Search as SearchIcon } from 'lucide-react';
+import { Save, Check, Globe, Store } from 'lucide-react';
+import { adminJsonFetch } from '@/lib/admin-fetch';
+
 
 interface SettingsData {
     id?: string;
@@ -33,7 +35,7 @@ export default function AdminSettingsPage() {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
+
 
     useEffect(() => {
         fetch('/api/settings')
@@ -48,9 +50,8 @@ export default function AdminSettingsPage() {
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
-        await fetch('/api/settings', {
+        await adminJsonFetch('/api/settings', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify(settings),
         });
         setSaving(false);

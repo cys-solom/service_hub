@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { authenticateRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-function authCheck(req: NextRequest) {
-  const auth = req.headers.get('authorization') || '';
-  const token = auth.replace('Bearer ', '').trim();
-  return token.length > 10;
-}
-
 // PUT update bundle
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!authCheck(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = authenticateRequest(req);
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -45,7 +42,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // DELETE bundle
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!authCheck(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = authenticateRequest(req);
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { id } = await params;
     await prisma.bundle.delete({ where: { id } });
@@ -54,4 +53,3 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
-

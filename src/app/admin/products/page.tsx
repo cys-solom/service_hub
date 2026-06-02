@@ -4,15 +4,17 @@ import { useEffect, useState } from 'react';
 import {
     Plus, Edit, Trash2, Package, X, Save,
     Eye, EyeOff, Clock, Search, AlertTriangle,
-    Ban, Star, Link, ArrowUp, ArrowDown, CheckCircle,
+    Ban, Star, Link,
     Image as ImageIcon, ChevronUp, ChevronDown, GripVertical,
 } from 'lucide-react';
 import { useSettings } from '@/lib/settings-context';
+import { adminFetch, adminJsonFetch } from '@/lib/admin-fetch';
+
 
 const A = {
   bg: '#06070a', surface: '#0f1117', card: '#141928',
   border: 'rgba(255,255,255,0.07)', text: '#E8E8E8',
-  textSec: '#9ca3af', textMuted: '#686868', accent: '#a78bfa',
+  textSec: '#b0b6c3', textMuted: '#7a7a7a', accent: '#a78bfa',  /* textMuted: was #686868 */
   accentSolid: '#7c3aed', green: '#10b981', red: '#f87171', amber: '#fbbf24',
 };
 
@@ -109,12 +111,11 @@ export default function AdminProductsPage() {
     const [loadingAction, setLoadingAction] = useState<string | null>(null);
     const [formWarrantyOptions, setFormWarrantyOptions] = useState<Array<{ label: string; labelAr: string; days: number; price: number }>>([]);
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
 
     const fetchData = async () => {
         try {
             const [prodRes, catRes] = await Promise.all([
-                fetch('/api/admin/products', { headers: { Authorization: `Bearer ${token}` } }),
+                adminFetch('/api/admin/products'),
                 fetch('/api/categories'),
             ]);
             const prods = await prodRes.json();
@@ -161,9 +162,8 @@ export default function AdminProductsPage() {
         const url = editingProduct ? `/api/products/${editingProduct.id}` : '/api/products';
         const method = editingProduct ? 'PUT' : 'POST';
 
-        await fetch(url, {
+        await adminJsonFetch(url, {
             method,
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify(body),
         });
 
@@ -201,10 +201,7 @@ export default function AdminProductsPage() {
 
     const handleDelete = async (id: string) => {
         if (!confirm('Delete this product?')) return;
-        await fetch(`/api/products/${id}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        await adminFetch(`/api/products/${id}`, { method: 'DELETE' });
         fetchData();
     };
 
@@ -214,9 +211,8 @@ export default function AdminProductsPage() {
         // Optimistic update
         setProducts(prev => prev.map(p => p.id === product.id ? { ...p, isActive: !p.isActive } : p));
         try {
-            await fetch(`/api/products/${product.id}`, {
+            await adminJsonFetch(`/api/products/${product.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ isActive: !product.isActive }),
             });
         } catch {
@@ -231,9 +227,8 @@ export default function AdminProductsPage() {
         setLoadingAction(actionKey);
         setProducts(prev => prev.map(p => p.id === product.id ? { ...p, outOfStock: !p.outOfStock } : p));
         try {
-            await fetch(`/api/products/${product.id}`, {
+            await adminJsonFetch(`/api/products/${product.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ outOfStock: !product.outOfStock }),
             });
         } catch {
@@ -250,9 +245,8 @@ export default function AdminProductsPage() {
             variants: p.variants.map(v => v.id === variantId ? { ...v, outOfStock: !v.outOfStock } : v)
         })));
         try {
-            await fetch(`/api/variants/${variantId}`, {
+            await adminJsonFetch(`/api/variants/${variantId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ outOfStock: !currentValue }),
             });
         } catch {
@@ -269,9 +263,8 @@ export default function AdminProductsPage() {
         setLoadingAction(actionKey);
         setProducts(prev => prev.map(p => p.id === product.id ? { ...p, isFeatured: !p.isFeatured } : p));
         try {
-            await fetch(`/api/products/${product.id}`, {
+            await adminJsonFetch(`/api/products/${product.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ isFeatured: !product.isFeatured }),
             });
         } catch {
@@ -281,9 +274,8 @@ export default function AdminProductsPage() {
     };
 
     const handleSetUnavailable = async (productId: string) => {
-        await fetch(`/api/products/${productId}`, {
+        await adminJsonFetch(`/api/products/${productId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({
                 unavailableUntil: unavailableDate ? new Date(unavailableDate).toISOString() : null,
                 isActive: false,
@@ -295,9 +287,8 @@ export default function AdminProductsPage() {
     };
 
     const handleClearUnavailable = async (productId: string) => {
-        await fetch(`/api/products/${productId}`, {
+        await adminJsonFetch(`/api/products/${productId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({
                 unavailableUntil: null,
                 isActive: true,
@@ -307,9 +298,8 @@ export default function AdminProductsPage() {
     };
 
     const handleAddVariant = async (productId: string) => {
-        await fetch('/api/variants', {
+        await adminJsonFetch('/api/variants', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ ...variantData, productId }),
         });
         setShowVariantForm(null);
@@ -319,10 +309,7 @@ export default function AdminProductsPage() {
 
     const handleDeleteVariant = async (variantId: string) => {
         if (!confirm('Delete this variant?')) return;
-        await fetch(`/api/variants/${variantId}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        await adminFetch(`/api/variants/${variantId}`, { method: 'DELETE' });
         fetchData();
     };
 
@@ -340,9 +327,8 @@ export default function AdminProductsPage() {
         const actionKey = `edit-variant-${variantId}`;
         setLoadingAction(actionKey);
         try {
-            await fetch(`/api/variants/${variantId}`, {
+            await adminJsonFetch(`/api/variants/${variantId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({
                     title: editVariantData.title,
                     duration: editVariantData.duration,
@@ -384,9 +370,8 @@ export default function AdminProductsPage() {
         // Optimistic update
         setProducts(prev => prev.map(p => p.id === productId ? { ...p, variants } : p));
         // Save to server
-        await fetch('/api/variants/reorder', {
+        await adminJsonFetch('/api/variants/reorder', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ orderedIds: variants.map(v => v.id) }),
         }).catch(() => fetchData());
     };
@@ -456,14 +441,12 @@ export default function AdminProductsPage() {
         
         // Fire and forget - don't block UI
         Promise.all([
-            fetch(`/api/products/${product.id}`, {
+            adminJsonFetch(`/api/products/${product.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ displayOrder: newMyOrder }),
             }),
-            fetch(`/api/products/${neighbor.id}`, {
+            adminJsonFetch(`/api/products/${neighbor.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ displayOrder: newNeighborOrder }),
             }),
         ]).catch(() => fetchData()); // Only refetch on error
@@ -987,9 +970,8 @@ export default function AdminProductsPage() {
                                                 setProducts(prev => prev.map(p =>
                                                     p.id === product.id ? { ...p, displayOrder: newOrder } : p
                                                 ));
-                                                fetch(`/api/products/${product.id}`, {
+                                                adminJsonFetch(`/api/products/${product.id}`, {
                                                     method: 'PUT',
-                                                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                                                     body: JSON.stringify({ displayOrder: newOrder }),
                                                 }).catch(() => fetchData());
                                             }}

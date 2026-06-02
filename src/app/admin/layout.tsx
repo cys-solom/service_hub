@@ -7,24 +7,25 @@ import AnimatedLogo from '@/components/AnimatedLogo';
 import {
   LayoutDashboard, Package, FolderOpen,
   ShoppingBag, Tag, Settings, FileText,
-  LogOut, Menu, X, ChevronRight, Gift,
+  LogOut, Menu, X, ChevronRight, Gift, Zap,
 } from 'lucide-react';
 
 const A = {
   bg: '#06070a', surface: '#0f1117', card: '#141928',
   border: 'rgba(255,255,255,0.07)', text: '#E8E8E8',
-  textSec: '#686868', accent: '#a78bfa', accentSolid: '#7c3aed',
+  textSec: '#9a9a9a', accent: '#a78bfa', accentSolid: '#7c3aed',  /* textSec: was #686868 */
 };
 
 const sidebarLinks = [
-  { href: '/admin',            icon: LayoutDashboard, label: 'Dashboard'  },
-  { href: '/admin/products',   icon: Package,         label: 'Products'   },
-  { href: '/admin/categories', icon: FolderOpen,      label: 'Categories' },
-  { href: '/admin/orders',     icon: ShoppingBag,     label: 'Orders'     },
-  { href: '/admin/coupons',    icon: Tag,             label: 'Coupons'    },
-  { href: '/admin/bundles',    icon: Gift,            label: 'Bundles'    },
-  { href: '/admin/content',    icon: FileText,        label: 'Content'    },
-  { href: '/admin/settings',   icon: Settings,        label: 'Settings'   },
+  { href: '/admin',                icon: LayoutDashboard, label: 'Dashboard'   },
+  { href: '/admin/products',       icon: Package,         label: 'Products'    },
+  { href: '/admin/quick-products', icon: Zap,             label: 'Quick Edit'  },
+  { href: '/admin/categories',     icon: FolderOpen,      label: 'Categories'  },
+  { href: '/admin/orders',         icon: ShoppingBag,     label: 'Orders'      },
+  { href: '/admin/coupons',        icon: Tag,             label: 'Coupons'     },
+  { href: '/admin/bundles',        icon: Gift,            label: 'Bundles'     },
+  { href: '/admin/content',        icon: FileText,        label: 'Content'     },
+  { href: '/admin/settings',       icon: Settings,        label: 'Settings'    },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -36,20 +37,20 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (pathname === '/admin/login') { setChecking(false); return; }
-    const token = localStorage.getItem('admin_token');
-    if (!token) { router.push('/admin/login'); return; }
-    fetch('/api/auth/verify', { headers: { Authorization: `Bearer ${token}` } })
+    // Verify session using httpOnly cookie — no localStorage needed
+    fetch('/api/auth/verify', { credentials: 'include' })
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then(() => { setAuthenticated(true); setChecking(false); })
-      .catch(() => { localStorage.removeItem('admin_token'); router.push('/admin/login'); });
+      .catch(() => { router.push('/admin/login'); });
   }, [pathname, router]);
 
   // Close sidebar on navigation
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    localStorage.removeItem('admin_token');
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    // Clean up any legacy localStorage token from older versions
+    try { localStorage.removeItem('admin_token'); } catch { /* SSR-safe */ }
     router.push('/admin/login');
   };
 

@@ -17,6 +17,31 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  // ── Security headers ──────────────────────────────────────────────────────
+  // Applied to all routes. CSP is intentionally omitted here to avoid
+  // breaking inline styles and third-party image sources; add it later once
+  // the asset inventory is complete.
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          // Prevent the site from being loaded inside an iframe (clickjacking)
+          { key: 'X-Frame-Options', value: 'DENY' },
+          // Stop browsers from MIME-sniffing the response type
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // Control referer information sent with requests
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          // Disable features not needed by this app
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), payment=()',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
+

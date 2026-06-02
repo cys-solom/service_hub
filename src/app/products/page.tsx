@@ -17,8 +17,8 @@ import {
 /* ── Colors ─────────────────────────────────────── */
 const C = {
   text: '#E8E8E8',
-  textSec: '#686868',
-  textMuted: '#484848',
+  textSec: '#9a9a9a',   /* was #686868 — improved contrast */
+  textMuted: '#7a7a7a', /* was #484848 — too dark, barely visible */
   border: 'rgba(255,255,255,0.07)',
   accent: '#a78bfa',
   green: '#22c55e',
@@ -66,12 +66,14 @@ function ProductCard({
   currencySymbol,
   onAddToCart,
   isAdded,
+  cardIndex = 0,
 }: {
   product: Product;
   isAr: boolean;
   currencySymbol: string;
   onAddToCart: (product: Product) => void;
   isAdded: boolean;
+  cardIndex?: number;
 }) {
   const productName = isAr && product.nameAr ? product.nameAr : product.name.trim();
   const displayPrice = getLowestPrice(product);
@@ -109,6 +111,7 @@ function ProductCard({
               dbImage={product.images?.[0]}
               size={44}
               bg="transparent"
+              lazy={cardIndex > 8}
             />
           </div>
 
@@ -341,7 +344,7 @@ export default function ProductsPage() {
                 {group.name}
               </h2>
               <div style={{ flex: 1, height: 1, background: 'rgba(139,92,246,0.15)' }} />
-              <span style={{ fontSize: '0.75rem', color: C.textMuted, fontWeight: 500 }}>
+              <span style={{ fontSize: '0.75rem', color: '#7a7a7a', fontWeight: 500 }}>
                 {group.products.length} {isAr ? 'منتج' : 'items'}
               </span>
             </div>
@@ -360,6 +363,7 @@ export default function ProductsPage() {
                     currencySymbol={currencySymbol}
                     onAddToCart={handleAddToCart}
                     isAdded={addedId === product.id}
+                    cardIndex={idx}
                   />
                 </div>
               ))}

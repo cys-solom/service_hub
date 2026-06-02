@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+
+// ── Rate-limit config ─────────────────────────────────────────────────────────
+const COUPON_LIMIT = 20;
+const COUPON_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
 // PUBLIC: Validate and apply coupon code
 export async function POST(request: NextRequest) {
+    // ── Rate limiting ─────────────────────────────────────────────────────────
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(ip, { limit: COUPON_LIMIT, windowMs: COUPON_WINDOW_MS, keyPrefix: 'coupon' });
+    if (!rl.allowed) {
+        return NextResponse.json(
+            { error: 'Too many coupon attempts. Please try again later.' },
+            { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+        );
+    }
+
     try {
         const body = await request.json();
         const { code, orderTotal } = body;

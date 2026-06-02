@@ -202,7 +202,7 @@ export default function Navbar() {
               </span>
             )}
           </span>
-          <span>Cart</span>
+          <span>{t.nav.cart}</span>
         </Link>
       </nav>
     </>

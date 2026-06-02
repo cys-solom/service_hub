@@ -197,6 +197,8 @@ interface ProductLogoProps {
   className?: string;
   /** 'transparent' = no background (like service-hub), 'white' = white bg box */
   bg?: 'transparent' | 'white' | 'none';
+  /** true = defer loading for below-the-fold logos (default: false = eager for first cards) */
+  lazy?: boolean;
 }
 
 export default function ProductLogo({
@@ -205,6 +207,7 @@ export default function ProductLogo({
   size = 48,
   className = '',
   bg = 'white',
+  lazy = false,
 }: ProductLogoProps) {
   const sources = useMemo(() => resolveSources(productName, dbImage), [productName, dbImage]);
   const [step, setStep] = useState(0);
@@ -273,7 +276,7 @@ export default function ProductLogo({
         key={sources[step]}
         src={sources[step]}
         alt={`${productName} logo`}
-        loading="eager"
+        loading={lazy ? 'lazy' : 'eager'}
         decoding="async"
         style={{
           width: '100%',
