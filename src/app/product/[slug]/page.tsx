@@ -112,6 +112,8 @@ export default async function ProductPage({ params }: Props) {
       duration:    v.duration,
       price:       v.price,
       warrantyDays: v.warrantyDays,
+      warrantyType: v.warrantyType || 'none',
+      warrantyDuration: v.warrantyDuration || 0,
       isActive:    v.isActive,
       outOfStock:  v.outOfStock,
     })),

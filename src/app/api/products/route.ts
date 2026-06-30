@@ -54,6 +54,8 @@ export async function GET() {
                         outOfStock: true,
                         displayOrder: true,
                         warrantyDays: true,
+                        warrantyType: true,
+                        warrantyDuration: true,
                     },
                 },
             },

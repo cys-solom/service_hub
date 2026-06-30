@@ -53,6 +53,8 @@ export interface ProductVariant {
     duration: string;
     price: number;
     warrantyDays: number;
+    warrantyType: string;
+    warrantyDuration: number;
     isActive: boolean;
     outOfStock: boolean;
 }

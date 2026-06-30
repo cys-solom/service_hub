@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { productId, title, duration, price, warrantyDays, isActive } = body;
+        const { productId, title, duration, price, warrantyDays, warrantyType, warrantyDuration, isActive } = body;
 
         const variant = await prisma.productVariant.create({
             data: {
@@ -20,6 +20,8 @@ export async function POST(request: NextRequest) {
                 duration,
                 price: parseFloat(price),
                 warrantyDays: parseInt(warrantyDays) || 0,
+                warrantyType: warrantyType || 'none',
+                warrantyDuration: parseInt(warrantyDuration) || 0,
                 isActive: isActive ?? true,
             },
         });

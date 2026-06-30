@@ -48,18 +48,20 @@ model Product {
 }
 
 model ProductVariant {
-  id           String   @id @default(cuid())
-  productId    String
-  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  title        String
-  duration     String
-  price        Float
-  warrantyDays Int      @default(0)
-  displayOrder Int      @default(0)
-  isActive     Boolean  @default(true)
-  outOfStock   Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id               String   @id @default(cuid())
+  productId        String
+  product          Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  title            String
+  duration         String
+  price            Float
+  warrantyDays     Int      @default(0)
+  warrantyType     String   @default("none")
+  warrantyDuration Int      @default(0)
+  displayOrder     Int      @default(0)
+  isActive         Boolean  @default(true)
+  outOfStock       Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Order {

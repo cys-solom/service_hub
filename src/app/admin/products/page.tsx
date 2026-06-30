@@ -26,6 +26,8 @@ interface VariantInput {
     duration: string;
     price: string;
     warrantyDays: string;
+    warrantyType?: string;
+    warrantyDuration?: string;
 }
 
 interface ProductData {
@@ -59,6 +61,8 @@ interface ProductData {
         duration: string;
         price: number;
         warrantyDays: number;
+        warrantyType: string;
+        warrantyDuration: number;
         isActive: boolean;
         outOfStock: boolean;
     }>;
@@ -109,6 +113,8 @@ export default function AdminProductsPage() {
         duration: '',
         price: '',
         warrantyDays: '0',
+        warrantyType: 'none',
+        warrantyDuration: '0',
     });
     const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
     const [editVariantData, setEditVariantData] = useState({
@@ -116,6 +122,8 @@ export default function AdminProductsPage() {
         duration: '',
         price: '',
         warrantyDays: '0',
+        warrantyType: 'none',
+        warrantyDuration: '0',
     });
     const [showUnavailableModal, setShowUnavailableModal] = useState<string | null>(null);
     const [unavailableDate, setUnavailableDate] = useState('');
@@ -334,7 +342,7 @@ export default function AdminProductsPage() {
             body: JSON.stringify({ ...variantData, productId }),
         });
         setShowVariantForm(null);
-        setVariantData({ title: '', duration: '', price: '', warrantyDays: '0' });
+        setVariantData({ title: '', duration: '', price: '', warrantyDays: '0', warrantyType: 'none', warrantyDuration: '0' });
         fetchData();
     };
 
@@ -359,6 +367,8 @@ export default function AdminProductsPage() {
             duration: variant.duration,
             price: String(variant.price),
             warrantyDays: String(variant.warrantyDays || 0),
+            warrantyType: variant.warrantyType || 'none',
+            warrantyDuration: String(variant.warrantyDuration || 0),
         });
     };
 
@@ -373,6 +383,8 @@ export default function AdminProductsPage() {
                     duration: editVariantData.duration,
                     price: editVariantData.price,
                     warrantyDays: editVariantData.warrantyDays,
+                    warrantyType: editVariantData.warrantyType || 'none',
+                    warrantyDuration: editVariantData.warrantyDuration || '0',
                 }),
             });
             // Optimistic update
@@ -384,6 +396,8 @@ export default function AdminProductsPage() {
                     duration: editVariantData.duration,
                     price: parseFloat(editVariantData.price) || 0,
                     warrantyDays: parseInt(editVariantData.warrantyDays) || 0,
+                    warrantyType: editVariantData.warrantyType || 'none',
+                    warrantyDuration: parseInt(editVariantData.warrantyDuration) || 0,
                 } : v)
             })));
         } catch {
@@ -416,7 +430,7 @@ export default function AdminProductsPage() {
     };
 
     const addFormVariant = () => {
-        setFormVariants([...formVariants, { title: '', duration: '', price: '', warrantyDays: '0' }]);
+        setFormVariants([...formVariants, { title: '', duration: '', price: '', warrantyDays: '0', warrantyType: 'none', warrantyDuration: '0' }]);
     };
 
     const updateFormVariant = (index: number, field: keyof VariantInput, value: string) => {
@@ -1269,14 +1283,27 @@ export default function AdminProductsPage() {
                                                         className="w-20 px-2 py-1 rounded-lg border border-violet-300 dark:border-violet-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-violet-500"
                                                         placeholder={currencySymbol}
                                                     />
-                                                    <input
-                                                        type="number"
-                                                        value={editVariantData.warrantyDays}
-                                                        onChange={(e) => setEditVariantData({ ...editVariantData, warrantyDays: e.target.value })}
-                                                        className="w-16 px-2 py-1 rounded-lg border border-violet-300 dark:border-violet-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-violet-500"
-                                                        placeholder="🛡️"
-                                                        title="Warranty days"
-                                                    />
+                                                    <select
+                                                        value={editVariantData.warrantyType || 'none'}
+                                                        onChange={(e) => setEditVariantData({ ...editVariantData, warrantyType: e.target.value })}
+                                                        className="w-20 px-1 py-1 rounded-lg border border-violet-300 dark:border-violet-600 bg-white dark:bg-gray-800 text-xs text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-violet-500"
+                                                        title="Warranty type"
+                                                    >
+                                                        <option value="none">No</option>
+                                                        <option value="full">Full</option>
+                                                        <option value="months">Months</option>
+                                                        <option value="days">Days</option>
+                                                    </select>
+                                                    {(editVariantData.warrantyType === 'months' || editVariantData.warrantyType === 'days') && (
+                                                        <input
+                                                            type="number"
+                                                            value={editVariantData.warrantyDuration}
+                                                            onChange={(e) => setEditVariantData({ ...editVariantData, warrantyDuration: e.target.value })}
+                                                            className="w-12 px-1.5 py-1 rounded-lg border border-violet-300 dark:border-violet-600 bg-white dark:bg-gray-800 text-xs text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-violet-500"
+                                                            placeholder="#"
+                                                            title="Duration"
+                                                        />
+                                                    )}
                                                     <div className="flex items-center gap-1 shrink-0">
                                                         <button
                                                             onClick={() => handleSaveVariant(v.id)}
@@ -1324,9 +1351,21 @@ export default function AdminProductsPage() {
                                                     <span className="text-xs text-gray-400">{v.duration}</span>
                                                     <span className="text-gray-300 dark:text-gray-600">·</span>
                                                     <span className={`font-semibold ${v.outOfStock ? 'text-red-400 line-through' : 'text-violet-600 dark:text-violet-400'}`}>{v.price} {currencySymbol}</span>
-                                                    {v.warrantyDays > 0 && (
-                                                        <span className="text-xs text-emerald-500" title={`${v.warrantyDays} days warranty`}>🛡️{v.warrantyDays}d</span>
-                                                    )}
+                                                    {(() => {
+                                                        const wType = v.warrantyType || 'none';
+                                                        const wDur = v.warrantyDuration || 0;
+                                                        const wDays = v.warrantyDays || 0;
+                                                        if (wType === 'full') {
+                                                            return <span className="text-xs text-emerald-500 font-semibold" title="Full warranty">🛡️ كامل</span>;
+                                                        } else if (wType === 'months' && wDur > 0) {
+                                                            return <span className="text-xs text-emerald-500 font-semibold" title={`${wDur} months warranty`}>🛡️ {wDur} شهر</span>;
+                                                        } else if (wType === 'days' && wDur > 0) {
+                                                            return <span className="text-xs text-emerald-500 font-semibold" title={`${wDur} days warranty`}>🛡️ {wDur} يوم</span>;
+                                                        } else if (wDays > 0) {
+                                                            return <span className="text-xs text-emerald-500 font-semibold" title={`${wDays} days warranty`}>🛡️ {wDays} يوم</span>;
+                                                        }
+                                                        return null;
+                                                    })()}
                                                     {v.outOfStock && (
                                                         <span className="text-[10px] font-bold text-red-500 uppercase">Out of Stock</span>
                                                     )}
@@ -1393,15 +1432,31 @@ export default function AdminProductsPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-500 mb-1">🛡️ Warranty (days)</label>
-                                            <input
-                                                type="number"
-                                                placeholder="0"
-                                                value={variantData.warrantyDays}
-                                                onChange={(e) => setVariantData({ ...variantData, warrantyDays: e.target.value })}
-                                                className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white outline-none w-24"
-                                            />
+                                            <label className="block text-xs text-gray-500 mb-1">🛡️ Warranty Type</label>
+                                            <select
+                                                value={variantData.warrantyType || 'none'}
+                                                onChange={(e) => setVariantData({ ...variantData, warrantyType: e.target.value })}
+                                                className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white outline-none w-28"
+                                            >
+                                                <option value="none">No Warranty</option>
+                                                <option value="full">Full Warranty</option>
+                                                <option value="months">Months</option>
+                                                <option value="days">Days</option>
+                                            </select>
                                         </div>
+                                        {(variantData.warrantyType === 'months' || variantData.warrantyType === 'days') && (
+                                            <div>
+                                                <label className="block text-xs text-gray-500 mb-1">Duration</label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    placeholder="e.g. 3"
+                                                    value={variantData.warrantyDuration}
+                                                    onChange={(e) => setVariantData({ ...variantData, warrantyDuration: e.target.value })}
+                                                    className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white outline-none w-20"
+                                                />
+                                            </div>
+                                        )}
                                         <button
                                             onClick={() => handleAddVariant(product.id)}
                                             className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 transition"

@@ -22,6 +22,8 @@ export async function PUT(
         if (body.duration !== undefined) allowedUpdates.duration = body.duration;
         if (body.price !== undefined) allowedUpdates.price = parseFloat(body.price);
         if (body.warrantyDays !== undefined) allowedUpdates.warrantyDays = parseInt(body.warrantyDays) || 0;
+        if (body.warrantyType !== undefined) allowedUpdates.warrantyType = body.warrantyType;
+        if (body.warrantyDuration !== undefined) allowedUpdates.warrantyDuration = parseInt(body.warrantyDuration) || 0;
         if (body.isActive !== undefined) allowedUpdates.isActive = body.isActive;
         if (body.outOfStock !== undefined) allowedUpdates.outOfStock = body.outOfStock;
 

@@ -55,6 +55,8 @@ export default async function ProductsPage() {
         duration:    v.duration,
         price:       v.price,
         warrantyDays: v.warrantyDays,
+        warrantyType: v.warrantyType || 'none',
+        warrantyDuration: v.warrantyDuration || 0,
         isActive:    v.isActive,
         outOfStock:  v.outOfStock,
       })),

@@ -35,6 +35,36 @@ function getLowestPrice(product: Product) {
   return prices.length > 0 ? Math.min(...prices) : product.basePrice;
 }
 
+function getWarrantyLabel(product: Product, isAr: boolean): string | null {
+  const wType = product.warrantyType || 'none';
+  const wDur = product.warrantyDuration || 0;
+  if (wType === 'full' || product.fullWarranty) {
+    return isAr ? 'ضمان كامل' : 'Full Warranty';
+  }
+  if (wType === 'months' && wDur > 0) {
+    return isAr ? `ضمان ${wDur} أشهر` : `${wDur} Mo Warranty`;
+  }
+  if (wType === 'days' && wDur > 0) {
+    return isAr ? `ضمان ${wDur} يوم` : `${wDur} Day Warranty`;
+  }
+
+  // Check variants
+  const activeVariants = product.variants?.filter(v => v.isActive) || [];
+  const withWarranty = activeVariants.filter(v => (v.warrantyType && v.warrantyType !== 'none') || (v.warrantyDays && v.warrantyDays > 0));
+  if (withWarranty.length > 0) {
+    const first = withWarranty[0];
+    const vType = first.warrantyType || 'none';
+    const vDur = first.warrantyDuration || 0;
+    const vDays = first.warrantyDays || 0;
+    if (vType === 'full') return isAr ? 'ضمان كامل' : 'Full Warranty';
+    if (vType === 'months' && vDur > 0) return isAr ? `ضمان ${vDur} أشهر` : `${vDur} Mo Warranty`;
+    if (vType === 'days' && vDur > 0) return isAr ? `ضمان ${vDur} يوم` : `${vDur} Day Warranty`;
+    if (vDays > 0) return isAr ? `ضمان ${vDays} يوم` : `${vDays} Day Warranty`;
+  }
+
+  return null;
+}
+
 const MAX_CHIPS = 4; // max variant chips shown on card
 
 function ProductCard({ product, isAr, onAddToCartVariant, isAdded, cardIndex = 0 }: {
@@ -65,7 +95,7 @@ function ProductCard({ product, isAr, onAddToCartVariant, isAdded, cardIndex = 0
   const selectedVariant = activeVariants.find(v => v.id === selectedVariantId) || defaultVariant;
   const canAdd = Boolean(selectedVariant && !selectedVariant.outOfStock && !product.outOfStock);
   const displayPrice = convertForDisplay(selectedVariant?.price ?? getLowestPrice(product));
-  const hasWarranty  = product.fullWarranty || product.variants?.some(v => v.warrantyDays > 0);
+  const warrantyLabel = getWarrantyLabel(product, isAr);
   const dbFeatures   = isAr && product.featuresAr?.length ? product.featuresAr : product.features;
   const features     = (dbFeatures && dbFeatures.length > 0) ? dbFeatures : ((isAr ? featureData?.ar : featureData?.en) || []);
   const showChips    = activeVariants.length > 1;
@@ -153,7 +183,7 @@ function ProductCard({ product, isAr, onAddToCartVariant, isAdded, cardIndex = 0
               </span>
             </div>
             <div className="sh-badges">
-              {hasWarranty && <span className="sh-badge sh-badge--green"><Shield style={{ width: 10, height: 10 }} />{isAr ? 'ضمان' : 'Warranty'}</span>}
+              {warrantyLabel && <span className="sh-badge sh-badge--green"><Shield style={{ width: 10, height: 10 }} />{warrantyLabel}</span>}
               {product.outOfStock && <span className="sh-badge sh-badge--red">{isAr ? 'غير متوفر' : 'Out of stock'}</span>}
             </div>
           </div>

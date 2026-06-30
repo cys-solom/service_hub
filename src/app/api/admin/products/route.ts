@@ -79,10 +79,13 @@ export async function POST(request: NextRequest) {
                 warrantyDuration: parseInt(String(body.warrantyDuration || 0)) || 0,
                 unavailableUntil: unavailableUntil ? new Date(unavailableUntil) : null,
                 variants: variants && variants.length > 0 ? {
-                    create: variants.map((v: { title: string; duration: string; price: string | number }) => ({
+                    create: variants.map((v: { title: string; duration: string; price: string | number; warrantyDays?: string | number; warrantyType?: string; warrantyDuration?: string | number }) => ({
                         title: v.title,
                         duration: v.duration,
                         price: parseFloat(String(v.price)),
+                        warrantyDays: parseInt(String(v.warrantyDays || 0)) || 0,
+                        warrantyType: v.warrantyType || 'none',
+                        warrantyDuration: parseInt(String(v.warrantyDuration || 0)) || 0,
                     }))
                 } : undefined,
             },

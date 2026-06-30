@@ -374,12 +374,29 @@ export default function ProductPageClient({ product, relatedProducts = [] }: { p
                             {v.duration && (
                               <div style={{ fontSize: '0.73rem', color: D.textMuted }}>{v.duration}</div>
                             )}
-                            {v.warrantyDays > 0 && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3, fontSize: '0.72rem', color: D.green }}>
-                                <Shield style={{ width: 11, height: 11 }} />
-                                {isAr ? `ضمان ${v.warrantyDays} يوم` : `${v.warrantyDays}-day warranty`}
-                              </div>
-                            )}
+                            {(() => {
+                              const vType = v.warrantyType || 'none';
+                              const vDur = v.warrantyDuration || 0;
+                              const vDays = v.warrantyDays || 0;
+                              let label = '';
+                              if (vType === 'full') {
+                                label = isAr ? 'ضمان كامل' : 'Full Warranty';
+                              } else if (vType === 'months' && vDur > 0) {
+                                label = isAr ? `ضمان ${vDur} أشهر` : `${vDur} Month Warranty`;
+                              } else if (vType === 'days' && vDur > 0) {
+                                label = isAr ? `ضمان ${vDur} يوم` : `${vDur} Day Warranty`;
+                              } else if (vDays > 0) {
+                                label = isAr ? `ضمان ${vDays} يوم` : `${vDays} Day Warranty`;
+                              } else {
+                                return null;
+                              }
+                              return (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3, fontSize: '0.72rem', color: D.green }}>
+                                  <Shield style={{ width: 11, height: 11 }} />
+                                  {label}
+                                </div>
+                              );
+                            })()}
                           </div>
 
                           <div style={{ fontSize: '1rem', fontWeight: 800, color: isSel ? accentColor : D.textSec, textDecoration: v.outOfStock ? 'line-through' : 'none', whiteSpace: 'nowrap' }}>
