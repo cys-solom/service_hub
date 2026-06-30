@@ -23,11 +23,13 @@ interface BundleModalProps {
   products: Product[];
   isAr: boolean;
   currencySymbol: string;
+  displaySymbol: string;
+  convertForDisplay: (price: number) => number;
   whatsappPhone: string;
   onClose: () => void;
 }
 
-function BundleModalInner({ bundle, products, isAr, currencySymbol, whatsappPhone, onClose }: BundleModalProps) {
+function BundleModalInner({ bundle, products, isAr, currencySymbol, displaySymbol, convertForDisplay, whatsappPhone, onClose }: BundleModalProps) {
   const title    = isAr && bundle.titleAr    ? bundle.titleAr    : bundle.title;
   const subtitle = isAr && bundle.subtitleAr ? bundle.subtitleAr : bundle.subtitle;
   const savings  = isAr && bundle.savingsAr  ? bundle.savingsAr  : bundle.savings;
@@ -204,7 +206,8 @@ function BundleModalInner({ bundle, products, isAr, currencySymbol, whatsappPhon
                             <Clock style={{ width: 11, height: 11, color: accentColor, flexShrink: 0 }} />
                             <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#c0c0c0' }}>{v.title}</span>
                             {v.price > 0 && (
-                              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: accentColor }}>· {v.price} {currencySymbol}</span>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: accentColor }}>
+                                · {convertForDisplay(v.price)} {displaySymbol}</span>
                             )}
                           </div>
                         ))}
@@ -247,9 +250,9 @@ function BundleModalInner({ bundle, products, isAr, currencySymbol, whatsappPhon
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '0.72rem', color: '#686868', marginBottom: '0.25rem' }}>{isAr ? 'سعر الباندل' : 'Bundle Price'}</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '1.6rem', fontWeight: 900, color: glowHex, letterSpacing: '-0.03em' }}>{bundle.price} {currencySymbol}</span>
+                  <span style={{ fontSize: '1.6rem', fontWeight: 900, color: glowHex, letterSpacing: '-0.03em' }}>{convertForDisplay(bundle.price)} {displaySymbol}</span>
                   {bundle.originalPrice > 0 && (
-                    <span style={{ fontSize: '1rem', color: '#686868', textDecoration: 'line-through' }}>{bundle.originalPrice}</span>
+                    <span style={{ fontSize: '1rem', color: '#686868', textDecoration: 'line-through' }}>{convertForDisplay(bundle.originalPrice)} {displaySymbol}</span>
                   )}
                 </div>
               </div>

@@ -51,7 +51,7 @@ export default function HomePage() {
   const [loaded, setLoaded] = useState(false);
   const [selectedBundle, setSelectedBundle] = useState<Bundle | null>(null);
   const { t, locale } = useI18n();
-  const { currencySymbol, whatsappPhone, heroStat1Value, heroStat1Label, heroStat2Value, heroStat2Label, heroStat3Value, heroStat3Label, settingsLoaded } = useSettings();
+  const { currencySymbol, displaySymbol, convertForDisplay, whatsappPhone, heroStat1Value, heroStat1Label, heroStat2Value, heroStat2Label, heroStat3Value, heroStat3Label, settingsLoaded } = useSettings();
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -265,7 +265,7 @@ export default function HomePage() {
                               {primaryVariant.title}
                               {primaryVariant.price > 0 && (
                                 <span style={{ opacity: 0.8, fontWeight: 600 }}>
-                                  · {primaryVariant.price} {currencySymbol}
+                                  · {convertForDisplay(primaryVariant.price)} {displaySymbol}
                                 </span>
                               )}
                             </span>
@@ -294,7 +294,7 @@ export default function HomePage() {
                           <div>
                             <span className="sh-price-from">{isAr ? 'من' : 'from'}</span>
                             <span className="sh-price" style={{ color: accentColor }}>
-                              {lowestPrice > 0 ? `${lowestPrice} ${currencySymbol}` : (isAr ? 'تواصل' : 'Contact')}
+                              {lowestPrice > 0 ? `${convertForDisplay(lowestPrice)} ${displaySymbol}` : (isAr ? 'تواصل' : 'Contact')}
                             </span>
                           </div>
                           <div className="sh-badges">
@@ -476,9 +476,9 @@ export default function HomePage() {
                       <div style={{ padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', flex: 1 }}>
                         {bundle.price > 0 && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '1.2rem', fontWeight: 800, color: glowHex }}>{bundle.price} {currencySymbol}</span>
+                            <span style={{ fontSize: '1.2rem', fontWeight: 800, color: glowHex }}>{convertForDisplay(bundle.price)} {displaySymbol}</span>
                             {bundle.originalPrice > 0 && (
-                              <span style={{ fontSize: '0.85rem', color: C.textMuted, textDecoration: 'line-through' }}>{bundle.originalPrice}</span>
+                              <span style={{ fontSize: '0.85rem', color: C.textMuted, textDecoration: 'line-through' }}>{convertForDisplay(bundle.originalPrice)} {displaySymbol}</span>
                             )}
                           </div>
                         )}

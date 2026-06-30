@@ -1,6 +1,8 @@
+import { Suspense } from 'react';
 import { prisma } from '@/lib/prisma';
 import { Product, WarrantyOption } from '@/lib/types';
 import ProductsPageClient from './ProductsPageClient';
+import ProductsLoading from './loading';
 
 function parseJson<T>(raw: string, fallback: T): T {
   try { return JSON.parse(raw) as T; } catch { return fallback; }
@@ -56,5 +58,9 @@ export default async function ProductsPage() {
       createdAt: p.createdAt.toISOString(),
     }));
 
-  return <ProductsPageClient products={products} />;
+  return (
+    <Suspense fallback={<ProductsLoading />}>
+      <ProductsPageClient products={products} />
+    </Suspense>
+  );
 }

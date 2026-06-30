@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Check, Eye, ShoppingCart, Shield, Star, Search, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -180,6 +181,9 @@ function ProductCard({ product, isAr, onAddToCartVariant, isAdded, cardIndex = 0
 }
 
 export default function ProductsPageClient({ products }: { products: Product[] }) {
+  const searchParams = useSearchParams();
+  const urlCategorySlug = searchParams.get('category') || '';
+
   const [addedId,          setAddedId]          = useState<string | null>(null);
   const [search,           setSearch]           = useState('');
   const [activeCategory,   setActiveCategory]   = useState('all');
@@ -190,6 +194,16 @@ export default function ProductsPageClient({ products }: { products: Product[] }
   useEffect(() => { setMounted(true); }, []);
   const C = mounted && resolvedTheme === 'light' ? LIGHT_C : DARK_C;
   const isAr          = locale === 'ar';
+
+  /* ── Set initial category from URL slug ── */
+  useEffect(() => {
+    if (!urlCategorySlug || !products.length) return;
+    const match = products.find(p => p.category?.slug === urlCategorySlug);
+    if (match?.categoryId) {
+      setActiveCategory(match.categoryId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlCategorySlug, products.length]);
 
   /* ── Categories list ── */
   const categories = useMemo(() => {
