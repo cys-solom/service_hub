@@ -38,6 +38,7 @@ export interface Product {
     categoryId: string;
     displayOrder: number;
     orderCount: number;
+    accountType: string;
     category: Category;
     variants: ProductVariant[];
     createdAt: string;

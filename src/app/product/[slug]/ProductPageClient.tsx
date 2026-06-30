@@ -545,7 +545,17 @@ export default function ProductPageClient({ product, relatedProducts = [] }: { p
               {/* Quick info pills */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
                 {[
-                  { icon: Shield, label: isAr ? 'بدون حساب' : 'No Account Needed', color: D.green },
+                  (() => {
+                    const type = product.accountType || 'no_account';
+                    const map: Record<string, { labelAr: string; labelEn: string; color: string }> = {
+                      no_account:  { labelAr: 'بدون حساب',             labelEn: 'No Account Needed',        color: D.green },
+                      credentials: { labelAr: 'يحتاج ميل وباسورد',     labelEn: 'Email & Password Required', color: '#60a5fa' },
+                      own_account: { labelAr: 'تفعيل على حسابك',       labelEn: 'Activate on Your Account', color: '#fbbf24' },
+                      both:        { labelAr: 'حساب جاهز أو تفعيل',   labelEn: 'Account or Activation',    color: '#fb923c' },
+                    };
+                    const info = map[type] || map['no_account'];
+                    return { icon: Shield, label: isAr ? info.labelAr : info.labelEn, color: info.color };
+                  })(),
                   { icon: Shield, label: isAr ? 'أصلي 100%' : '100% Genuine', color: accentColor },
                   { icon: Star, label: isAr ? `${plansCount} خطط` : `${plansCount} Plans`, color: '#fbbf24' },
                   { icon: MessageCircle, label: isAr ? 'دعم عبر واتساب' : 'WhatsApp Support', color: '#60a5fa' },

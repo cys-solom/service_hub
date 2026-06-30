@@ -67,6 +67,7 @@ export async function PUT(
         if (body.warrantyOptions !== undefined) data.warrantyOptions = JSON.stringify(body.warrantyOptions);
         if (body.fullWarranty !== undefined) data.fullWarranty = body.fullWarranty;
         if (displayOrder !== undefined) data.displayOrder = parseInt(String(displayOrder)) || 0;
+        if (body.accountType !== undefined) data.accountType = body.accountType;
         if (unavailableUntil !== undefined) {
             data.unavailableUntil = unavailableUntil ? new Date(unavailableUntil) : null;
         }

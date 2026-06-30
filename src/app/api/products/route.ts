@@ -36,6 +36,7 @@ export async function GET() {
                 displayOrder: true,
                 unavailableUntil: true,
                 categoryId: true,
+                accountType: true,
                 category: {
                     select: { id: true, name: true, slug: true },
                 },

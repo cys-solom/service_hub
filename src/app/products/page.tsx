@@ -44,6 +44,7 @@ export default async function ProductsPage() {
       categoryId:     p.categoryId,
       displayOrder:   p.displayOrder,
       orderCount:     p.orderCount,
+      accountType:    p.accountType || 'no_account',
       category:       p.category,
       variants:       p.variants.map(v => ({
         id:          v.id,

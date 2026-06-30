@@ -47,6 +47,7 @@ interface ProductData {
     displayOrder: number;
     durationLabel: string;
     fullWarranty: boolean;
+    accountType: string;
     warrantyOptions: Array<{ label: string; labelAr: string; days: number; price: number }>;
     categoryId: string;
     category: { name: string };
@@ -95,6 +96,7 @@ export default function AdminProductsPage() {
         displayOrder: '0',
         unavailableUntil: '',
         durationLabel: '',
+        accountType: 'no_account',
     });
     const [formVariants, setFormVariants] = useState<VariantInput[]>([]);
     const [showVariantForm, setShowVariantForm] = useState<string | null>(null);
@@ -157,6 +159,7 @@ export default function AdminProductsPage() {
             fullWarranty: formData.fullWarranty,
             displayOrder: parseInt(formData.displayOrder) || 0,
             durationLabel: formData.durationLabel,
+            accountType: formData.accountType || 'no_account',
             warrantyOptions: formWarrantyOptions,
             unavailableUntil: formData.unavailableUntil || null,
         };
@@ -202,6 +205,7 @@ export default function AdminProductsPage() {
             displayOrder: String(product.displayOrder || 0),
             unavailableUntil: product.unavailableUntil ? new Date(product.unavailableUntil).toISOString().slice(0, 16) : '',
             durationLabel: product.durationLabel || '',
+            accountType: product.accountType || 'no_account',
         });
         setFormVariants([]);
         const wo = product.warrantyOptions;
@@ -750,6 +754,21 @@ export default function AdminProductsPage() {
                                     placeholder="e.g. شهري, سنوي, yearly, monthly"
                                 />
                                 <p className="text-xs text-gray-400 mt-1">Text shown on product card like &quot;170 EGP /شهري&quot;</p>
+                            </div>
+                            {/* Account Type */}
+                            <div>
+                                <label className="adm-label">🔐 نوع الحساب / Account Type</label>
+                                <select
+                                    value={formData.accountType}
+                                    onChange={(e) => setFormData({ ...formData, accountType: e.target.value })}
+                                    className="adm-input"
+                                >
+                                    <option value="no_account">🟢 بدون حساب — No Account Needed</option>
+                                    <option value="credentials">🔵 يحتاج ميل وباسورد — Email &amp; Password Required</option>
+                                    <option value="own_account">🟡 تفعيل على حسابك — Activate on Your Account</option>
+                                    <option value="both">🟠 حساب جاهز أو تفعيل — Account or Activation</option>
+                                </select>
+                                <p className="text-xs text-gray-400 mt-1">يظهر كـ badge في صفحة المنتج</p>
                             </div>
                             {/* Warranty Options */}
                             <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
