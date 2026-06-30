@@ -440,6 +440,7 @@ export default function AdminProductsPage() {
             displayOrder: String(maxOrder + 1),
             unavailableUntil: '',
             durationLabel: '',
+            accountType: 'no_account',
         });
         setFormVariants([]);
         setFormWarrantyOptions([]);
