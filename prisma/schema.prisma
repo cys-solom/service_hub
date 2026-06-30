@@ -40,7 +40,9 @@ model Product {
   variants         ProductVariant[]
   orderCount       Int              @default(0)
   displayOrder     Int              @default(0)
-  accountType      String           @default("no_account")
+  accountType      String           @default("ready_account")
+  warrantyType     String           @default("none")
+  warrantyDuration Int              @default(0)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 }

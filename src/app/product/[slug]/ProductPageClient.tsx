@@ -545,20 +545,33 @@ export default function ProductPageClient({ product, relatedProducts = [] }: { p
               {/* Quick info pills */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
                 {[
+                  // ── Account Type Badge ──
                   (() => {
-                    const type = product.accountType || 'no_account';
+                    const type = product.accountType || 'ready_account';
                     const map: Record<string, { labelAr: string; labelEn: string; color: string }> = {
-                      no_account:  { labelAr: 'بدون حساب',             labelEn: 'No Account Needed',        color: D.green },
-                      credentials: { labelAr: 'يحتاج ميل وباسورد',     labelEn: 'Email & Password Required', color: '#60a5fa' },
-                      own_account: { labelAr: 'تفعيل على حسابك',       labelEn: 'Activate on Your Account', color: '#fbbf24' },
-                      both:        { labelAr: 'حساب جاهز أو تفعيل',   labelEn: 'Account or Activation',    color: '#fb923c' },
+                      ready_account:      { labelAr: 'حساب جاهز',              labelEn: 'Ready Account',            color: D.green },
+                      own_email_only:     { labelAr: 'على حسابك — ميل فقط',   labelEn: 'Your Account — Email Only', color: '#60a5fa' },
+                      own_email_password: { labelAr: 'على حسابك — ميل وباسورد', labelEn: 'Your Account — Email & Pass', color: '#fbbf24' },
                     };
-                    const info = map[type] || map['no_account'];
+                    const info = map[type] || map['ready_account'];
                     return { icon: Shield, label: isAr ? info.labelAr : info.labelEn, color: info.color };
                   })(),
-                  { icon: Shield, label: isAr ? 'أصلي 100%' : '100% Genuine', color: accentColor },
-                  { icon: Star, label: isAr ? `${plansCount} خطط` : `${plansCount} Plans`, color: '#fbbf24' },
-                  { icon: MessageCircle, label: isAr ? 'دعم عبر واتساب' : 'WhatsApp Support', color: '#60a5fa' },
+                  // ── Warranty Badge ──
+                  (() => {
+                    const wType = product.warrantyType || 'none';
+                    const wDur  = product.warrantyDuration || 0;
+                    if (wType === 'full') {
+                      return { icon: Shield, label: isAr ? 'ضمان كامل' : 'Full Warranty', color: D.green };
+                    } else if (wType === 'months' && wDur > 0) {
+                      return { icon: Shield, label: isAr ? `ضمان ${wDur} شهر` : `${wDur} Month Warranty`, color: '#a78bfa' };
+                    } else if (wType === 'days' && wDur > 0) {
+                      return { icon: Shield, label: isAr ? `ضمان ${wDur} يوم` : `${wDur} Day Warranty`, color: '#a78bfa' };
+                    } else {
+                      return { icon: Shield, label: isAr ? 'أصلي 100%' : '100% Genuine', color: accentColor };
+                    }
+                  })(),
+                  { icon: Star,          label: isAr ? `${plansCount} خطط`   : `${plansCount} Plans`,     color: '#fbbf24' },
+                  { icon: MessageCircle, label: isAr ? 'دعم عبر واتساب'       : 'WhatsApp Support',        color: '#60a5fa' },
                 ].map((item, i) => (
                   <div key={i} style={{
                     padding: '0.75rem 0.875rem', borderRadius: 12,

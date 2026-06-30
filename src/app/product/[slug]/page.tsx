@@ -101,7 +101,9 @@ export default async function ProductPage({ params }: Props) {
     categoryId:     raw.categoryId,
     displayOrder:   raw.displayOrder,
     orderCount:     raw.orderCount,
-    accountType:    raw.accountType || 'no_account',
+    accountType:    raw.accountType || 'ready_account',
+    warrantyType:   raw.warrantyType || 'none',
+    warrantyDuration: raw.warrantyDuration || 0,
     category:       raw.category,
     variants:       raw.variants.map(v => ({
       id:          v.id,

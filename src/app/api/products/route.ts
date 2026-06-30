@@ -37,6 +37,8 @@ export async function GET() {
                 unavailableUntil: true,
                 categoryId: true,
                 accountType: true,
+                warrantyType: true,
+                warrantyDuration: true,
                 category: {
                     select: { id: true, name: true, slug: true },
                 },

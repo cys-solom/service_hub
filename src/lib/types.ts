@@ -39,6 +39,8 @@ export interface Product {
     displayOrder: number;
     orderCount: number;
     accountType: string;
+    warrantyType: string;
+    warrantyDuration: number;
     category: Category;
     variants: ProductVariant[];
     createdAt: string;

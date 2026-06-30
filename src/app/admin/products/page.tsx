@@ -48,6 +48,8 @@ interface ProductData {
     durationLabel: string;
     fullWarranty: boolean;
     accountType: string;
+    warrantyType: string;
+    warrantyDuration: number;
     warrantyOptions: Array<{ label: string; labelAr: string; days: number; price: number }>;
     categoryId: string;
     category: { name: string };
@@ -96,7 +98,9 @@ export default function AdminProductsPage() {
         displayOrder: '0',
         unavailableUntil: '',
         durationLabel: '',
-        accountType: 'no_account',
+        accountType: 'ready_account',
+        warrantyType: 'none',
+        warrantyDuration: '0',
     });
     const [formVariants, setFormVariants] = useState<VariantInput[]>([]);
     const [showVariantForm, setShowVariantForm] = useState<string | null>(null);
@@ -159,7 +163,9 @@ export default function AdminProductsPage() {
             fullWarranty: formData.fullWarranty,
             displayOrder: parseInt(formData.displayOrder) || 0,
             durationLabel: formData.durationLabel,
-            accountType: formData.accountType || 'no_account',
+            accountType: formData.accountType || 'ready_account',
+            warrantyType: formData.warrantyType || 'none',
+            warrantyDuration: parseInt(String(formData.warrantyDuration)) || 0,
             warrantyOptions: formWarrantyOptions,
             unavailableUntil: formData.unavailableUntil || null,
         };
@@ -205,7 +211,9 @@ export default function AdminProductsPage() {
             displayOrder: String(product.displayOrder || 0),
             unavailableUntil: product.unavailableUntil ? new Date(product.unavailableUntil).toISOString().slice(0, 16) : '',
             durationLabel: product.durationLabel || '',
-            accountType: product.accountType || 'no_account',
+            accountType: product.accountType || 'ready_account',
+            warrantyType: product.warrantyType || 'none',
+            warrantyDuration: String(product.warrantyDuration || 0),
         });
         setFormVariants([]);
         const wo = product.warrantyOptions;
@@ -440,7 +448,9 @@ export default function AdminProductsPage() {
             displayOrder: String(maxOrder + 1),
             unavailableUntil: '',
             durationLabel: '',
-            accountType: 'no_account',
+            accountType: 'ready_account',
+            warrantyType: 'none',
+            warrantyDuration: '0',
         });
         setFormVariants([]);
         setFormWarrantyOptions([]);
@@ -764,12 +774,42 @@ export default function AdminProductsPage() {
                                     onChange={(e) => setFormData({ ...formData, accountType: e.target.value })}
                                     className="adm-input"
                                 >
-                                    <option value="no_account">🟢 بدون حساب — No Account Needed</option>
-                                    <option value="credentials">🔵 يحتاج ميل وباسورد — Email &amp; Password Required</option>
-                                    <option value="own_account">🟡 تفعيل على حسابك — Activate on Your Account</option>
-                                    <option value="both">🟠 حساب جاهز أو تفعيل — Account or Activation</option>
+                                    <option value="ready_account">🟢 حساب جاهز — العميل يستلم ميل وباسورد</option>
+                                    <option value="own_email_only">📧 على حسابك — نحتاج ميل فقط</option>
+                                    <option value="own_email_password">🔐 على حسابك — نحتاج ميل وباسورد</option>
                                 </select>
                                 <p className="text-xs text-gray-400 mt-1">يظهر كـ badge في صفحة المنتج</p>
+                            </div>
+                            {/* Warranty Type */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="adm-label">🛡️ نوع الضمان / Warranty</label>
+                                    <select
+                                        value={formData.warrantyType}
+                                        onChange={(e) => setFormData({ ...formData, warrantyType: e.target.value })}
+                                        className="adm-input"
+                                    >
+                                        <option value="none">بدون ضمان / No Warranty</option>
+                                        <option value="full">✅ ضمان كامل / Full Warranty</option>
+                                        <option value="months">📅 ضمان بالشهور / Months</option>
+                                        <option value="days">📆 ضمان بالأيام / Days</option>
+                                    </select>
+                                </div>
+                                {(formData.warrantyType === 'months' || formData.warrantyType === 'days') && (
+                                    <div>
+                                        <label className="adm-label">
+                                            {formData.warrantyType === 'months' ? '🔢 عدد الشهور' : '🔢 عدد الأيام'}
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={formData.warrantyDuration}
+                                            onChange={(e) => setFormData({ ...formData, warrantyDuration: e.target.value })}
+                                            className="adm-input"
+                                            placeholder={formData.warrantyType === 'months' ? 'e.g. 3' : 'e.g. 30'}
+                                        />
+                                    </div>
+                                )}
                             </div>
                             {/* Warranty Options */}
                             <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">

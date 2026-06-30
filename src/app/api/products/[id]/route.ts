@@ -68,6 +68,8 @@ export async function PUT(
         if (body.fullWarranty !== undefined) data.fullWarranty = body.fullWarranty;
         if (displayOrder !== undefined) data.displayOrder = parseInt(String(displayOrder)) || 0;
         if (body.accountType !== undefined) data.accountType = body.accountType;
+        if (body.warrantyType !== undefined) data.warrantyType = body.warrantyType;
+        if (body.warrantyDuration !== undefined) data.warrantyDuration = parseInt(String(body.warrantyDuration)) || 0;
         if (unavailableUntil !== undefined) {
             data.unavailableUntil = unavailableUntil ? new Date(unavailableUntil) : null;
         }

@@ -74,7 +74,9 @@ export async function POST(request: NextRequest) {
                 displayOrder: parseInt(String(displayOrder || 0)) || 0,
                 durationLabel: durationLabel || '',
                 warrantyOptions: JSON.stringify(body.warrantyOptions || []),
-                accountType: body.accountType || 'no_account',
+                accountType: body.accountType || 'ready_account',
+                warrantyType: body.warrantyType || 'none',
+                warrantyDuration: parseInt(String(body.warrantyDuration || 0)) || 0,
                 unavailableUntil: unavailableUntil ? new Date(unavailableUntil) : null,
                 variants: variants && variants.length > 0 ? {
                     create: variants.map((v: { title: string; duration: string; price: string | number }) => ({
