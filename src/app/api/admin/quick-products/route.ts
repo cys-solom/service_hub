@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/auth';
+import { cacheInvalidate } from '@/lib/api-cache';
 
 /* ──────────────────────────────────────────────
    GET /api/admin/quick-products
@@ -172,6 +173,7 @@ export async function PATCH(request: NextRequest) {
             },
         });
 
+        cacheInvalidate('products-active');
         return NextResponse.json({ success: true, product: updated });
     } catch (err) {
         const msg = err instanceof Error ? err.message : 'Update failed';

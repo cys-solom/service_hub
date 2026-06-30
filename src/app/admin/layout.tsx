@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, ReactNode } from 'react';
+import { useCallback, useEffect, useState, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import AnimatedLogo from '@/components/AnimatedLogo';
@@ -13,7 +13,7 @@ import {
 const A = {
   bg: '#06070a', surface: '#0f1117', card: '#141928',
   border: 'rgba(255,255,255,0.07)', text: '#E8E8E8',
-  textSec: '#9a9a9a', accent: '#a78bfa', accentSolid: '#7c3aed',  /* textSec: was #686868 */
+  textSec: '#9a9a9a', accent: '#a78bfa', accentSolid: '#7c3aed',
 };
 
 const sidebarLinks = [
@@ -34,22 +34,42 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [authenticated, setAuthenticated] = useState(false);
   const [checking,      setChecking]      = useState(true);
   const [sidebarOpen,   setSidebarOpen]   = useState(false);
+  const [newOrders,     setNewOrders]     = useState(0);
 
   useEffect(() => {
     if (pathname === '/admin/login') { setChecking(false); return; }
-    // Verify session using httpOnly cookie — no localStorage needed
     fetch('/api/auth/verify', { credentials: 'include' })
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then(() => { setAuthenticated(true); setChecking(false); })
       .catch(() => { router.push('/admin/login'); });
   }, [pathname, router]);
 
-  // Close sidebar on navigation
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
+
+  const fetchNewOrdersCount = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/orders/count', { credentials: 'include' });
+      if (res.ok) {
+        const { count } = await res.json();
+        setNewOrders(count ?? 0);
+      }
+    } catch { /* noop */ }
+  }, []);
+
+  useEffect(() => {
+    if (!authenticated) return;
+    fetchNewOrdersCount();
+    const interval = setInterval(fetchNewOrdersCount, 30_000);
+    return () => clearInterval(interval);
+  }, [authenticated, fetchNewOrdersCount]);
+
+  // Clear badge when visiting orders page
+  useEffect(() => {
+    if (pathname === '/admin/orders') setNewOrders(0);
+  }, [pathname]);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-    // Clean up any legacy localStorage token from older versions
     try { localStorage.removeItem('admin_token'); } catch { /* SSR-safe */ }
     router.push('/admin/login');
   };
@@ -58,7 +78,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   if (checking) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: A.bg }}>
-      <div style={{ width: 36, height: 36, border: '3px solid rgba(255,255,255,0.1)', borderTopColor: A.accent, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <div className="admin-loader" />
     </div>
   );
 
@@ -71,28 +91,18 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="admin-dark" style={{ display: 'flex', minHeight: '100vh', background: A.bg, color: A.text }}>
 
-      {/* ── Sidebar overlay (mobile) ── */}
+      {/* Sidebar overlay (mobile) */}
       {sidebarOpen && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 39, backdropFilter: 'blur(4px)' }}
+          className="admin-overlay"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* ── Sidebar ── */}
-      <aside style={{
-        position: 'fixed', top: 0, left: 0, bottom: 0,
-        width: 240, zIndex: 40,
-        background: A.surface,
-        borderRight: `1px solid ${A.border}`,
-        display: 'flex', flexDirection: 'column',
-        transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-        transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
-      }}
-        // Always visible on lg+
-        className="lg:!translate-x-0"
+      {/* Sidebar */}
+      <aside
+        className={`admin-sidebar ${sidebarOpen ? 'admin-sidebar--open' : ''}`}
       >
-        {/* Logo + close */}
         <div style={{ padding: '1.25rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${A.border}` }}>
           <AnimatedLogo href="/admin" size="md" />
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden"
@@ -101,88 +111,95 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        {/* Nav */}
         <nav style={{ flex: 1, padding: '0.75rem 0.75rem', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
           {sidebarLinks.map((link) => {
             const active = pathname === link.href || (link.href !== '/admin' && pathname.startsWith(link.href));
+            const isOrders = link.href === '/admin/orders';
             return (
-              <Link key={link.href} href={link.href} style={{
-                display: 'flex', alignItems: 'center', gap: '0.75rem',
-                padding: '0.625rem 0.875rem',
-                borderRadius: 12,
-                fontSize: '0.875rem', fontWeight: 500,
-                color: active ? A.accent : A.textSec,
-                background: active ? 'rgba(139,92,246,0.1)' : 'transparent',
-                textDecoration: 'none',
-                transition: 'all 0.15s',
-                position: 'relative',
-              }}
-                onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = A.text; } }}
-                onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = A.textSec; } }}
-              >
-                {active && <div style={{ position: 'absolute', left: 0, top: '20%', bottom: '20%', width: 3, background: A.accent, borderRadius: '0 4px 4px 0' }} />}
+              <Link key={link.href} href={link.href} className={`admin-nav-link ${active ? 'admin-nav-link--active' : ''}`}
+                style={{ position: 'relative' }}>
+                {active && <div className="admin-nav-indicator" />}
                 <link.icon style={{ width: 18, height: 18, flexShrink: 0 }} />
                 {link.label}
-                {active && <ChevronRight style={{ width: 14, height: 14, marginLeft: 'auto', opacity: 0.5 }} />}
+                {isOrders && newOrders > 0 && (
+                  <span style={{
+                    marginLeft: 'auto',
+                    background: '#ef4444',
+                    color: 'white',
+                    fontSize: '0.65rem',
+                    fontWeight: 800,
+                    minWidth: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 5px',
+                    lineHeight: 1,
+                    boxShadow: '0 0 8px rgba(239,68,68,0.6)',
+                    animation: 'badgePulse 2s ease infinite',
+                  }}>
+                    {newOrders > 99 ? '99+' : newOrders}
+                  </span>
+                )}
+                {active && !isOrders && <ChevronRight style={{ width: 14, height: 14, marginLeft: 'auto', opacity: 0.5 }} />}
+                {active && isOrders && newOrders === 0 && <ChevronRight style={{ width: 14, height: 14, marginLeft: 'auto', opacity: 0.5 }} />}
               </Link>
             );
           })}
         </nav>
 
-        {/* Logout */}
         <div style={{ padding: '0.75rem', borderTop: `1px solid ${A.border}` }}>
-          <button onClick={handleLogout} style={{
-            width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem',
-            padding: '0.625rem 0.875rem', borderRadius: 12, border: 'none',
-            background: 'rgba(239,68,68,0.06)', color: '#f87171',
-            fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer',
-            transition: 'background 0.15s', fontFamily: 'inherit',
-          }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.12)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.06)'; }}
-          >
+          <button onClick={handleLogout} className="admin-logout-btn">
             <LogOut style={{ width: 18, height: 18 }} />
             Logout
           </button>
         </div>
       </aside>
 
-      {/* ── Main content ── */}
+      {/* Main content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', marginLeft: 0 }}
         className="lg:!ml-[240px]"
       >
         {/* Header */}
-        <header style={{
-          position: 'sticky', top: 0, zIndex: 30,
-          background: 'rgba(6,7,10,0.9)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: `1px solid ${A.border}`,
-          padding: '0 1.25rem',
-          height: '3.75rem',
-          display: 'flex', alignItems: 'center', gap: '1rem',
-        }}>
-          {/* Hamburger */}
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden"
-            style={{ padding: '0.5rem', borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.05)', color: A.textSec, cursor: 'pointer', display: 'flex' }}>
+        <header className="admin-header">
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden admin-hamburger">
             <Menu style={{ width: 20, height: 20 }} />
+            {newOrders > 0 && (
+              <span style={{
+                position: 'absolute', top: 6, right: 6,
+                width: 8, height: 8, borderRadius: '50%',
+                background: '#ef4444',
+                boxShadow: '0 0 6px rgba(239,68,68,0.8)',
+              }} />
+            )}
           </button>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
             <span style={{ fontSize: '0.75rem', color: A.textSec }}>Admin</span>
             <ChevronRight style={{ width: 14, height: 14, color: A.textSec }} />
             <h1 style={{ fontSize: '0.9rem', fontWeight: 600, color: A.text, margin: 0 }}>{currentLabel}</h1>
+            {pathname !== '/admin/orders' && newOrders > 0 && (
+              <Link href="/admin/orders" style={{
+                marginLeft: '0.5rem',
+                background: 'rgba(239,68,68,0.15)',
+                border: '1px solid rgba(239,68,68,0.3)',
+                color: '#f87171',
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                padding: '2px 8px',
+                borderRadius: 6,
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+              }}>
+                🔴 {newOrders} new order{newOrders !== 1 ? 's' : ''}
+              </Link>
+            )}
           </div>
 
-          <Link href="/" target="_blank" style={{
-            display: 'flex', alignItems: 'center', gap: '0.375rem',
-            fontSize: '0.75rem', color: A.textSec, textDecoration: 'none',
-            padding: '0.375rem 0.75rem', borderRadius: 8,
-            border: `1px solid ${A.border}`,
-            transition: 'all 0.15s',
-          }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = A.accent; e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = A.textSec; e.currentTarget.style.borderColor = A.border; }}
-          >
+          <Link href="/" target="_blank" className="admin-store-link">
             View Store ↗
           </Link>
         </header>
@@ -192,6 +209,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
+
+      <style>{`
+        @keyframes badgePulse {
+          0%, 100% { box-shadow: 0 0 8px rgba(239,68,68,0.6); }
+          50%       { box-shadow: 0 0 16px rgba(239,68,68,0.9); }
+        }
+      `}</style>
     </div>
   );
 }

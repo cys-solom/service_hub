@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import AnimatedLogo from '@/components/AnimatedLogo';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 
@@ -51,11 +50,7 @@ export default function AdminLoginPage() {
                 <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[128px]" />
             </div>
 
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="relative w-full max-w-md"
-            >
+            <div className="relative w-full max-w-md fade-up">
                 <div className="rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/80 backdrop-blur-xl p-8 shadow-xl">
                     <div className="text-center mb-8">
                         <div className="flex justify-center mb-4">
@@ -124,7 +119,7 @@ export default function AdminLoginPage() {
                         </button>
                     </form>
                 </div>
-            </motion.div>
+            </div>
         </div>
     );
 }

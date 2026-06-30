@@ -8,6 +8,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { LayoutWrapper } from '@/components/LayoutWrapper';
 import PageTransition from '@/components/PageTransition';
+import ScrollToTop from '@/components/ScrollToTop';
+import CartDrawer from '@/components/CartDrawer';
 
 export const metadata: Metadata = {
   title: 'Service Hub - Premium Digital Subscriptions',
@@ -24,6 +26,8 @@ export const metadata: Metadata = {
     description: 'Buy ChatGPT, Gemini, Canva & more. No account required — order via WhatsApp.',
   },
   robots: { index: true, follow: true },
+  manifest: '/manifest.json',
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Service Hub' },
 };
 
 export default function RootLayout({
@@ -51,6 +55,8 @@ export default function RootLayout({
                   <div className="relative z-10">
                     <Footer />
                   </div>
+                  <ScrollToTop />
+                  <CartDrawer />
                 </LayoutWrapper>
               </CartProvider>
             </SettingsProvider>

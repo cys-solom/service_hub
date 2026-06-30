@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Save, Check, Globe, Store } from 'lucide-react';
+import { Save, Check, Globe, Store, AlertCircle } from 'lucide-react';
 import { adminJsonFetch } from '@/lib/admin-fetch';
-
 
 interface SettingsData {
     id?: string;
@@ -24,246 +22,181 @@ interface SettingsData {
 
 export default function AdminSettingsPage() {
     const [settings, setSettings] = useState<SettingsData>({
-        storeName: '',
-        whatsappPhone: '',
-        currency: 'EGP',
-        seoTitle: '',
-        seoDescription: '',
-        theme: 'dark',
+        storeName: '', whatsappPhone: '', currency: 'EGP',
+        seoTitle: '', seoDescription: '', theme: 'dark',
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [saved, setSaved] = useState(false);
-
-
+    const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
     useEffect(() => {
         fetch('/api/settings')
             .then((r) => r.json())
-            .then((data) => {
-                if (data && !data.error) setSettings(data);
-                setLoading(false);
-            })
+            .then((data) => { if (data && !data.error) setSettings(data); setLoading(false); })
             .catch(() => setLoading(false));
     }, []);
+
+    const showToast = (type: 'success' | 'error', msg: string) => {
+        setToast({ type, msg });
+        setTimeout(() => setToast(null), 3000);
+    };
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
-        await adminJsonFetch('/api/settings', {
-            method: 'PUT',
-            body: JSON.stringify(settings),
-        });
+        try {
+            const res = await adminJsonFetch('/api/settings', {
+                method: 'PUT',
+                body: JSON.stringify(settings),
+            });
+            if (!res.ok) throw new Error('Failed to save');
+            showToast('success', 'Settings saved successfully');
+        } catch {
+            showToast('error', 'Failed to save settings');
+        }
         setSaving(false);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
     };
 
     if (loading) {
         return (
-            <div className="max-w-3xl space-y-4">
+            <div style={{ maxWidth: 720, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="skeleton h-12 w-full rounded-xl" />
+                    <div key={i} className="sk" style={{ height: 48, borderRadius: 12 }} />
                 ))}
             </div>
         );
     }
 
-    return (
-        <div className="max-w-3xl space-y-6">
-            {/* Store Settings */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 p-6"
-            >
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center">
-                        <Store className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Store Settings</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Configure your store information</p>
-                    </div>
-                </div>
+    const inputStyle: React.CSSProperties = {
+        width: '100%', padding: '0.75rem 1rem', borderRadius: 12,
+        border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)',
+        color: '#E8E8E8', fontSize: '0.875rem', fontFamily: 'inherit',
+        outline: 'none', transition: 'border-color 0.15s', minHeight: 44,
+    };
 
-                <form onSubmit={handleSave} className="space-y-5">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Store Name</label>
-                            <input
-                                value={settings.storeName}
-                                onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 transition"
-                            />
+    const labelStyle: React.CSSProperties = {
+        display: 'block', fontSize: '0.78rem', fontWeight: 600,
+        color: '#9a9a9a', marginBottom: '0.4rem',
+    };
+
+    return (
+        <div className="fade-up" style={{ maxWidth: 720 }}>
+            {/* Toast */}
+            {toast && (
+                <div className={`admin-toast admin-toast--${toast.type}`}>
+                    {toast.type === 'success' ? <Check style={{ width: 18, height: 18 }} /> : <AlertCircle style={{ width: 18, height: 18 }} />}
+                    {toast.msg}
+                </div>
+            )}
+
+            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+                {/* Store Settings */}
+                <div className="adm-card" style={{ padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #7c3aed, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Store style={{ width: 20, height: 20, color: 'white' }} />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Currency</label>
-                            <select
-                                value={settings.currency}
-                                onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 transition"
-                            >
-                                <option value="EGP">EGP (ج.م)</option>
-                                <option value="USD">USD ($)</option>
-                                <option value="EUR">EUR (€)</option>
-                                <option value="GBP">GBP (£)</option>
-                                <option value="SAR">SAR (ر.س)</option>
-                                <option value="AED">AED (د.إ)</option>
-                                <option value="KWD">KWD (د.ك)</option>
-                                <option value="QAR">QAR (ر.ق)</option>
-                                <option value="BHD">BHD (ب.د)</option>
-                                <option value="OMR">OMR (ر.ع)</option>
+                            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#E8E8E8', margin: 0 }}>Store Settings</h2>
+                            <p style={{ fontSize: '0.78rem', color: '#7a7a7a', margin: 0 }}>Configure your store information</p>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+                        <div>
+                            <label style={labelStyle}>Store Name</label>
+                            <input value={settings.storeName} onChange={(e) => setSettings({ ...settings, storeName: e.target.value })} style={inputStyle} />
+                        </div>
+                        <div>
+                            <label style={labelStyle}>Currency</label>
+                            <select value={settings.currency} onChange={(e) => setSettings({ ...settings, currency: e.target.value })} style={{ ...inputStyle, cursor: 'pointer' }}>
+                                {['EGP', 'USD', 'EUR', 'GBP', 'SAR', 'AED', 'KWD', 'QAR', 'BHD', 'OMR'].map(c => (
+                                    <option key={c} value={c}>{c}</option>
+                                ))}
                             </select>
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">WhatsApp Phone Number</label>
-                        <input
-                            value={settings.whatsappPhone}
-                            onChange={(e) => setSettings({ ...settings, whatsappPhone: e.target.value })}
-                            placeholder="e.g. 1234567890"
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 transition"
-                        />
-                        <p className="text-xs text-gray-400 mt-1">Include country code without + sign</p>
+                    <div style={{ marginTop: '1rem' }}>
+                        <label style={labelStyle}>WhatsApp Phone Number</label>
+                        <input value={settings.whatsappPhone} onChange={(e) => setSettings({ ...settings, whatsappPhone: e.target.value })} placeholder="e.g. 201234567890" style={inputStyle} />
+                        <p style={{ fontSize: '0.72rem', color: '#686868', marginTop: '0.3rem' }}>Include country code without + sign</p>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Default Theme</label>
-                        <select
-                            value={settings.theme}
-                            onChange={(e) => setSettings({ ...settings, theme: e.target.value })}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 transition"
-                        >
+                    <div style={{ marginTop: '1rem' }}>
+                        <label style={labelStyle}>Default Theme</label>
+                        <select value={settings.theme} onChange={(e) => setSettings({ ...settings, theme: e.target.value })} style={{ ...inputStyle, cursor: 'pointer' }}>
                             <option value="dark">Dark</option>
                             <option value="light">Light</option>
                         </select>
                     </div>
+                </div>
 
-                    {/* Hero Stats Section */}
-                    <div className="border-t border-gray-200 dark:border-gray-800 pt-5 mt-5">
-                        <div className="flex items-center gap-2 mb-4">
-                            <span className="text-xl">📊</span>
-                            <h3 className="font-medium text-gray-900 dark:text-white">Hero Statistics</h3>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="space-y-4">
-                                <h4 className="text-sm font-semibold text-gray-500">Stat 1</h4>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Value</label>
-                                    <input
-                                        value={settings.heroStat1Value}
-                                        onChange={(e) => setSettings({ ...settings, heroStat1Value: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 transition"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Label</label>
-                                    <input
-                                        value={settings.heroStat1Label}
-                                        onChange={(e) => setSettings({ ...settings, heroStat1Label: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 transition"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <h4 className="text-sm font-semibold text-gray-500">Stat 2</h4>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Value</label>
-                                    <input
-                                        value={settings.heroStat2Value}
-                                        onChange={(e) => setSettings({ ...settings, heroStat2Value: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 transition"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Label</label>
-                                    <input
-                                        value={settings.heroStat2Label}
-                                        onChange={(e) => setSettings({ ...settings, heroStat2Label: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 transition"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <h4 className="text-sm font-semibold text-gray-500">Stat 3</h4>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Value</label>
-                                    <input
-                                        value={settings.heroStat3Value}
-                                        onChange={(e) => setSettings({ ...settings, heroStat3Value: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 transition"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Label</label>
-                                    <input
-                                        value={settings.heroStat3Label}
-                                        onChange={(e) => setSettings({ ...settings, heroStat3Label: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 transition"
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                {/* Hero Stats */}
+                <div className="adm-card" style={{ padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                        <span style={{ fontSize: '1.1rem' }}>📊</span>
+                        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E8E8E8', margin: 0 }}>Hero Statistics</h3>
                     </div>
 
-                    {/* SEO Section */}
-                    <div className="border-t border-gray-200 dark:border-gray-800 pt-5 mt-5">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Globe className="w-5 h-5 text-violet-500" />
-                            <h3 className="font-medium text-gray-900 dark:text-white">SEO Settings</h3>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">SEO Title</label>
-                                <input
-                                    value={settings.seoTitle}
-                                    onChange={(e) => setSettings({ ...settings, seoTitle: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 transition"
-                                    placeholder="Your store title for search engines"
-                                />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.25rem' }}>
+                        {[
+                            { label: 'Stat 1', vKey: 'heroStat1Value' as const, lKey: 'heroStat1Label' as const },
+                            { label: 'Stat 2', vKey: 'heroStat2Value' as const, lKey: 'heroStat2Label' as const },
+                            { label: 'Stat 3', vKey: 'heroStat3Value' as const, lKey: 'heroStat3Label' as const },
+                        ].map((stat) => (
+                            <div key={stat.label} style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</span>
+                                <div>
+                                    <label style={labelStyle}>Value</label>
+                                    <input value={settings[stat.vKey] || ''} onChange={(e) => setSettings({ ...settings, [stat.vKey]: e.target.value })} style={inputStyle} placeholder="e.g. 4000+" />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Label</label>
+                                    <input value={settings[stat.lKey] || ''} onChange={(e) => setSettings({ ...settings, [stat.lKey]: e.target.value })} style={inputStyle} placeholder="e.g. Happy Customers" />
+                                </div>
                             </div>
+                        ))}
+                    </div>
+                </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">SEO Description</label>
-                                <textarea
-                                    value={settings.seoDescription}
-                                    onChange={(e) => setSettings({ ...settings, seoDescription: e.target.value })}
-                                    rows={3}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-violet-500 transition resize-none"
-                                    placeholder="Description for search engines"
-                                />
-                            </div>
-                        </div>
+                {/* SEO */}
+                <div className="adm-card" style={{ padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                        <Globe style={{ width: 20, height: 20, color: '#a78bfa' }} />
+                        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E8E8E8', margin: 0 }}>SEO Settings</h3>
                     </div>
 
-                    <button
-                        type="submit"
-                        disabled={saving}
-                        className={`w-full py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 shadow-lg transition-all ${saved
-                            ? 'bg-emerald-500 text-white shadow-emerald-500/25'
-                            : 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-violet-500/25 hover:shadow-violet-500/40'
-                            } disabled:opacity-50`}
-                    >
-                        {saved ? (
-                            <>
-                                <Check className="w-5 h-5" />
-                                Saved!
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-5 h-5" />
-                                {saving ? 'Saving...' : 'Save Settings'}
-                            </>
-                        )}
-                    </button>
-                </form>
-            </motion.div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div>
+                            <label style={labelStyle}>SEO Title</label>
+                            <input value={settings.seoTitle} onChange={(e) => setSettings({ ...settings, seoTitle: e.target.value })} placeholder="Your store title for search engines" style={inputStyle} />
+                        </div>
+                        <div>
+                            <label style={labelStyle}>SEO Description</label>
+                            <textarea value={settings.seoDescription} onChange={(e) => setSettings({ ...settings, seoDescription: e.target.value })} rows={3} placeholder="Description for search engines" style={{ ...inputStyle, resize: 'none' }} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Save Button */}
+                <button
+                    type="submit"
+                    disabled={saving}
+                    className="adm-btn adm-btn--primary"
+                    style={{
+                        width: '100%', padding: '1rem', fontSize: '0.95rem',
+                        borderRadius: 14, opacity: saving ? 0.6 : 1,
+                    }}
+                >
+                    {saving ? (
+                        <><div className="admin-loader" style={{ width: 18, height: 18, borderWidth: 2 }} /> Saving...</>
+                    ) : (
+                        <><Save style={{ width: 18, height: 18 }} /> Save Settings</>
+                    )}
+                </button>
+            </form>
         </div>
     );
 }

@@ -1,704 +1,174 @@
-'use client';
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
+import { Product, WarrantyOption } from '@/lib/types';
+import ProductPageClient from './ProductPageClient';
 
-import { useEffect, useState, use } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import {
-  ArrowLeft, Check, ShoppingCart, MessageCircle,
-  Plus, Minus, Ban, Tag, X, Shield, Star, ExternalLink,
-} from 'lucide-react';
-import { useCart } from '@/lib/cart-context';
-import { Product, ProductVariant, WarrantyOption } from '@/lib/types';
-import { buildWhatsAppMessage, generateWhatsAppUrl, openWhatsApp } from '@/lib/whatsapp';
-import { useI18n } from '@/lib/i18n';
-import { useSettings } from '@/lib/settings-context';
-import ProductLogo from '@/components/ProductLogo';
-import { getProductFeatureData, getProductAccentColor } from '@/lib/product-features';
+type Props = { params: Promise<{ slug: string }> };
 
-/* ─────────────────────────────────────────────────
-   Design tokens — consistent with homepage + cards
-───────────────────────────────────────────────── */
-const D = {
-  bg: '#0d0d0d',
-  surface: '#101010',
-  surfaceUp: '#141414',
-  border: 'rgba(255,255,255,0.07)',
-  borderMid: 'rgba(255,255,255,0.10)',
-  text: '#E8E8E8',
-  textSec: '#9a9a9a',    /* was #686868 — improved contrast */
-  textMuted: '#7a7a7a',  /* was #404040 — barely visible, now readable */
-  green: '#22c55e',
-  greenBg: 'rgba(34,197,94,0.10)',
-  greenBorder: 'rgba(34,197,94,0.20)',
-  red: '#f87171',
-  redBg: 'rgba(248,113,113,0.10)',
-  yellow: '#fbbf24',
-};
+/* ─── helpers ─────────────────────────────────────────── */
+function parseJson<T>(raw: string, fallback: T): T {
+  try { return JSON.parse(raw) as T; } catch { return fallback; }
+}
 
-export default function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params);
-  const router = useRouter();
-  const { addItem } = useCart();
+/* ─── SEO Metadata ─────────────────────────────────────── */
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001').replace(/\/$/, '');
 
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
-  const [quantity, setQuantity] = useState(1);
-  const [addedToCart, setAddedToCart] = useState(false);
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [showOrderForm, setShowOrderForm] = useState(false);
-  const [selectedWarrantyIndex, setSelectedWarrantyIndex] = useState(-1);
-  const [couponCode, setCouponCode] = useState('');
-  const [couponLoading, setCouponLoading] = useState(false);
-  const [couponError, setCouponError] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<{
-    code: string; discount: number; isPercent: boolean; discountAmount: number;
-  } | null>(null);
+  try {
+    const p = await prisma.product.findUnique({
+      where: { slug },
+      select: {
+        name: true, nameAr: true, description: true, images: true,
+        variants: { where: { isActive: true }, select: { price: true }, orderBy: { price: 'asc' }, take: 1 },
+      },
+    });
+    if (!p) return { title: 'Product | Service Hub' };
 
-  const { t, locale } = useI18n();
-  const { currencySymbol, currency, whatsappPhone } = useSettings(); /* whatsappPhone from context — no extra fetch */
-  const isAr = locale === 'ar';
+    const name      = p.name;
+    const desc      = p.description?.trim() || `Buy ${name} subscription at the best price. Fast delivery via WhatsApp.`;
+    const shortDesc = desc.length > 160 ? desc.slice(0, 157) + '…' : desc;
+    const images    = parseJson<string[]>(p.images, []);
+    const imageUrl  = images[0] || null;
+    const lowestPrice = p.variants[0]?.price;
+    const priceStr  = lowestPrice ? ` — From ${lowestPrice}` : '';
 
-  useEffect(() => {
-    fetch(`/api/products/slug/${slug}`)
-      .then((r) => r.json())
-      .then((prod) => {
-        if (prod.error) { router.push('/products'); return; }
-        setProduct(prod);
-        const inStock = prod.variants?.find((v: ProductVariant) => !v.outOfStock);
-        setSelectedVariant(inStock || prod.variants?.[0] || null);
-        setLoading(false);
-      })
-      .catch(() => { setLoading(false); router.push('/products'); });
-  }, [slug, router]);
+    return {
+      title:       `${name} | Service Hub${priceStr}`,
+      description: shortDesc,
+      keywords:    `${name}, ${p.nameAr || name}, digital subscription, buy online, WhatsApp order, Service Hub`,
+      alternates:  { canonical: `${baseUrl}/product/${slug}` },
+      openGraph: {
+        title: `${name} | Service Hub`, description: shortDesc,
+        url: `${baseUrl}/product/${slug}`, type: 'website',
+        images: imageUrl ? [{ url: imageUrl, width: 800, height: 600, alt: name }] : [],
+      },
+      twitter: {
+        card: imageUrl ? 'summary_large_image' : 'summary',
+        title: `${name} | Service Hub`, description: shortDesc,
+        images: imageUrl ? [imageUrl] : [],
+      },
+    };
+  } catch {
+    return { title: 'Product | Service Hub', description: 'Premium digital subscriptions at the best prices.' };
+  }
+}
 
-  /* ── Derived values ── */
-  const accentColor = product ? getProductAccentColor(product.name) : '#a78bfa';
-  const featureData = product ? getProductFeatureData(product.name) : null;
+/* ─── Page ─────────────────────────────────────────────── */
+export default async function ProductPage({ params }: Props) {
+  const { slug } = await params;
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001').replace(/\/$/, '');
 
-  const currentPrice = selectedVariant?.price || product?.basePrice || 0;
-  const rawWo = product?.warrantyOptions;
-  const warrantyOptions: WarrantyOption[] = Array.isArray(rawWo)
-    ? rawWo
-    : (typeof rawWo === 'string' ? (() => { try { return JSON.parse(rawWo); } catch { return []; } })() : []);
-  const selectedWarranty = selectedWarrantyIndex >= 0 ? warrantyOptions[selectedWarrantyIndex] : null;
-  const warrantyPrice = selectedWarranty?.price || 0;
-  const subtotal = (currentPrice * quantity) + warrantyPrice;
-  const discountAmount = appliedCoupon?.discountAmount || 0;
-  const finalPrice = Math.max(0, subtotal - discountAmount);
-  const isOutOfStock = product?.outOfStock || false;
-  const isSelectedVariantOutOfStock = selectedVariant?.outOfStock || false;
-  const canPurchase = !isOutOfStock && !isSelectedVariantOutOfStock;
-  const plansCount = product?.variants?.filter(v => v.isActive)?.length || 1;
+  const raw = await prisma.product.findUnique({
+    where:   { slug },
+    include: {
+      category: { select: { id: true, name: true, slug: true, isActive: true } },
+      variants: {
+        where:   { isActive: true },
+        orderBy: { displayOrder: 'asc' },
+      },
+    },
+  });
 
-  useEffect(() => {
-    if (appliedCoupon) {
-      const newSubtotal = currentPrice * quantity;
-      const newDiscount = appliedCoupon.isPercent
-        ? (newSubtotal * appliedCoupon.discount) / 100
-        : appliedCoupon.discount;
-      setAppliedCoupon(prev => prev ? { ...prev, discountAmount: Math.min(newDiscount, newSubtotal) } : null);
-    }
-  }, [currentPrice, quantity]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!raw || !raw.isActive) notFound();
 
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) return;
-    setCouponLoading(true); setCouponError('');
-    try {
-      const res = await fetch('/api/coupons/validate', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: couponCode, orderTotal: subtotal }),
-      });
-      const data = await res.json();
-      if (!res.ok) setCouponError(data.error || 'Invalid coupon');
-      else setAppliedCoupon({ code: data.coupon.code, discount: data.coupon.discount, isPercent: data.coupon.isPercent, discountAmount: data.discountAmount });
-      setCouponCode('');
-    } catch { setCouponError('Failed to validate coupon'); }
-    setCouponLoading(false);
-  };
-  const handleRemoveCoupon = () => { setAppliedCoupon(null); setCouponCode(''); setCouponError(''); };
+  const isUnavailable = raw.unavailableUntil ? new Date(raw.unavailableUntil) > new Date() : false;
+  const images = parseJson<string[]>(raw.images, []);
+  const activeVariants = raw.variants;
+  const prices = activeVariants.map(v => v.price).filter(p => p > 0);
+  const lowPrice  = prices.length ? Math.min(...prices) : null;
+  const highPrice = prices.length ? Math.max(...prices) : null;
 
-  const handleAddToCart = () => {
-    if (!product || !selectedVariant) return;
-    addItem({ productId: product.id, productName: product.name, productSlug: product.slug, productImage: product.images?.[0] || '', variantId: selectedVariant.id, variantTitle: selectedVariant.title, duration: selectedVariant.duration, price: selectedVariant.price, quantity });
-    setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 2000);
+  const product: Product = {
+    id:             raw.id,
+    name:           raw.name,
+    nameAr:         raw.nameAr || undefined,
+    slug:           raw.slug,
+    description:    raw.description,
+    descriptionAr:  raw.descriptionAr || undefined,
+    features:       parseJson<string[]>(raw.features, []),
+    featuresAr:     parseJson<string[]>(raw.featuresAr, []),
+    basePrice:      raw.basePrice,
+    discount:       raw.discount,
+    isActive:       raw.isActive,
+    outOfStock:     raw.outOfStock || isUnavailable,
+    isFeatured:     raw.isFeatured,
+    images,
+    durationLabel:  raw.durationLabel,
+    warrantyOptions: parseJson<WarrantyOption[]>(raw.warrantyOptions, []),
+    fullWarranty:   raw.fullWarranty,
+    categoryId:     raw.categoryId,
+    displayOrder:   raw.displayOrder,
+    orderCount:     raw.orderCount,
+    category:       raw.category,
+    variants:       raw.variants.map(v => ({
+      id:          v.id,
+      productId:   v.productId,
+      title:       v.title,
+      duration:    v.duration,
+      price:       v.price,
+      warrantyDays: v.warrantyDays,
+      isActive:    v.isActive,
+      outOfStock:  v.outOfStock,
+    })),
+    createdAt: raw.createdAt.toISOString(),
   };
 
-  const handleWhatsAppOrder = async () => {
-    if (!product || !selectedVariant) return;
-    if (!customerName || !customerPhone) { setShowOrderForm(true); return; }
+  /* ── Related products (same category, max 3) ─ */
+  const relatedRaw = raw.categoryId ? await prisma.product.findMany({
+    where: {
+      categoryId: raw.categoryId,
+      isActive:   true,
+      id:         { not: raw.id },
+    },
+    include: {
+      variants: { where: { isActive: true }, orderBy: { price: 'asc' }, take: 1 },
+    },
+    orderBy: { isFeatured: 'desc' },
+    take: 3,
+  }) : [];
 
-    try {
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerName,
-          customerPhone,
-          items: [{
-            productId:    product.id,
-            variantId:    selectedVariant.id,   // required for server-side price lookup
-            productName:  product.name,
-            variant:      selectedVariant.title,
-            quantity,
-            warrantyIndex: selectedWarrantyIndex, // -1 = no warranty
-            // price intentionally omitted — server computes from DB
-          }],
-          couponCode: appliedCoupon?.code || null,
-          // totalPrice intentionally omitted
-        }),
-      });
+  const relatedProducts = relatedRaw.map(p => ({
+    id:    p.id,
+    name:  p.name,
+    nameAr: p.nameAr || undefined,
+    slug:  p.slug,
+    images: parseJson<string[]>(p.images, []),
+    lowestPrice: p.variants[0]?.price || null,
+  }));
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        // Show error inline — currently using couponError state as general error display
-        setCouponError(data.error || (isAr ? 'حدث خطأ. حاول مرة أخرى.' : 'An error occurred. Please try again.'));
-        return;
-      }
-
-      // ── Build WhatsApp message from server-computed trusted data ──────────
-      const trustedItems = Array.isArray(data.items) ? data.items : [{
-        productName: product.name,
-        variant:     selectedVariant.title,
-        price:       selectedVariant.price,
-        quantity,
-      }];
-      const trustedTotal = typeof data.total === 'number' ? data.total : finalPrice;
-      const orderCode    = data.orderCode;
-
-      const message = buildWhatsAppMessage({
-        orderCode,
-        customerName,
-        customerPhone,
-        items: trustedItems.map((i: { productName: string; variant: string; price: number; quantity: number }) => ({
-          productName: i.productName,
-          variant:     i.variant,
-          price:       i.price,
-          quantity:    i.quantity,
-        })),
-        totalPrice: trustedTotal,
-        currency:   currency || 'EGP',
-        locale,
-      });
-
-      openWhatsApp(generateWhatsAppUrl(whatsappPhone, message));
-      setTimeout(() => router.push(`/thank-you?code=${orderCode}`), 500);
-
-    } catch (err) {
-      console.error('Failed to place order', err);
-      setCouponError(isAr ? 'فشل إرسال الطلب. تحقق من الاتصال.' : 'Failed to send order. Check your connection.');
-    }
-  };
-
-  /* ── Full skeleton loading \u2014 mirrors actual layout ── */
-  if (loading) return (
-    <div style={{ minHeight: '100vh', padding: '0 1rem 6rem' }}>
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-        {/* Breadcrumb skeleton */}
-        <div style={{ padding: '1.75rem 0 2rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <div className="sk" style={{ width: 120, height: 14, borderRadius: 6 }} />
-          <div className="sk" style={{ width: 8, height: 8, borderRadius: 3 }} />
-          <div className="sk" style={{ width: 160, height: 14, borderRadius: 6 }} />
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,380px)', gap: '1.5rem' }}>
-          {/* Left panel */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Hero card skeleton */}
-            <div style={{ background: 'linear-gradient(145deg,#101010,#0d0d0d)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, overflow: 'hidden' }}>
-              <div style={{ height: 3, background: 'rgba(139,92,246,0.2)' }} />
-              <div style={{ padding: '2rem' }}>
-                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
-                  <div className="sk" style={{ width: 96, height: 96, borderRadius: '22%', flexShrink: 0 }} />
-                  <div style={{ flex: 1 }}>
-                    <div className="sk" style={{ height: 20, width: '35%', borderRadius: 20, marginBottom: 12 }} />
-                    <div className="sk" style={{ height: 28, width: '70%', borderRadius: 8, marginBottom: 10 }} />
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      {[1,2,3,4,5].map(i => <div key={i} className="sk" style={{ width: 14, height: 14, borderRadius: 3 }} />)}
-                      <div className="sk" style={{ width: 60, height: 14, borderRadius: 5, marginLeft: 4 }} />
-                    </div>
-                  </div>
-                </div>
-                <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {[90, 75, 85].map((w, i) => <div key={i} className="sk" style={{ height: 13, width: `${w}%`, borderRadius: 5 }} />)}
-                </div>
-              </div>
-            </div>
-
-            {/* Features card skeleton */}
-            <div style={{ background: 'linear-gradient(145deg,#101010,#0d0d0d)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '1.5rem' }}>
-              <div style={{ display: 'flex', gap: 10, marginBottom: '1.25rem' }}>
-                <div className="sk" style={{ width: 28, height: 28, borderRadius: 8 }} />
-                <div className="sk" style={{ width: 100, height: 14, borderRadius: 6, alignSelf: 'center' }} />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px,1fr))', gap: '0.65rem' }}>
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="sk" style={{ height: 44, borderRadius: 10 }} />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Right panel skeleton */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {/* Plans */}
-            <div style={{ background: 'linear-gradient(145deg,#101010,#0d0d0d)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '1.5rem' }}>
-              <div className="sk" style={{ height: 12, width: '40%', borderRadius: 5, marginBottom: 14 }} />
-              {[1,2].map(i => <div key={i} className="sk" style={{ height: 56, borderRadius: 14, marginBottom: 8 }} />)}
-            </div>
-            {/* Price + actions */}
-            <div style={{ background: 'linear-gradient(145deg,#101010,#0d0d0d)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div className="sk" style={{ height: 10, width: '30%', borderRadius: 4 }} />
-              <div className="sk" style={{ height: 40, width: '60%', borderRadius: 8 }} />
-              <div className="sk" style={{ height: 1, borderRadius: 1 }} />
-              <div className="sk" style={{ height: 50, borderRadius: 14 }} />
-              <div className="sk" style={{ height: 50, borderRadius: 14 }} />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-  if (!product) return null;
-
-  const productName = isAr && product.nameAr ? product.nameAr : product.name;
-  const productDesc = isAr && product.descriptionAr ? product.descriptionAr : product.description;
-  const dbFeatures = isAr && product.featuresAr?.length ? product.featuresAr : product.features;
-  const builtinFeatures = isAr ? featureData?.ar : featureData?.en;
-  const features = (dbFeatures && dbFeatures.length > 0) ? dbFeatures : (builtinFeatures || []);
-
-  /* shared input style */
-  const inputSt: React.CSSProperties = {
-    width: '100%', padding: '0.75rem 1rem', borderRadius: '0.75rem',
-    border: `1px solid ${D.border}`, background: D.surfaceUp,
-    color: D.text, outline: 'none', fontSize: '0.875rem', fontFamily: 'inherit',
-    boxSizing: 'border-box',
-    transition: 'border-color 0.15s',
+  /* ── JSON-LD structured data ─ */
+  const jsonLd = {
+    '@context': 'https://schema.org/',
+    '@type':    'Product',
+    name:       raw.name,
+    description: raw.description || `Buy ${raw.name} subscription at the best price.`,
+    image:      images.length ? images : undefined,
+    url:        `${baseUrl}/product/${slug}`,
+    offers: lowPrice ? {
+      '@type':        'AggregateOffer',
+      priceCurrency:  'EGP',
+      lowPrice:        lowPrice,
+      highPrice:       highPrice ?? lowPrice,
+      offerCount:      prices.length,
+      availability:   raw.outOfStock || isUnavailable
+        ? 'https://schema.org/OutOfStock'
+        : 'https://schema.org/InStock',
+      seller: {
+        '@type': 'Organization',
+        name:    process.env.NEXT_PUBLIC_STORE_NAME || 'Service Hub',
+      },
+    } : undefined,
   };
 
   return (
     <>
-      {/* Spin keyframe */}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-
-      <div style={{ minHeight: '100vh', padding: '0 1rem 6rem' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-
-          {/* ── Back breadcrumb ── */}
-          <div style={{ padding: '1.75rem 0 2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <button
-              onClick={() => router.back()}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: D.textSec, fontSize: '0.85rem', fontFamily: 'inherit', padding: 0 }}
-            >
-              <ArrowLeft style={{ width: 15, height: 15, transform: isAr ? 'rotate(180deg)' : undefined }} />
-              {t.product.backToProducts}
-            </button>
-            <span style={{ color: D.textMuted, fontSize: '0.75rem' }}>›</span>
-            <span style={{ color: D.textMuted, fontSize: '0.75rem' }}>{productName}</span>
-          </div>
-
-          {/* ══════════════════════════════════════════
-              MAIN 2-COLUMN LAYOUT
-          ══════════════════════════════════════════ */}
-          <div className="pdp-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,380px)', gap: '1.5rem', alignItems: 'start' }}>
-
-            {/* ════════════
-                LEFT PANEL
-            ════════════ */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-
-              {/* ── Hero card: Logo + Name + Description ── */}
-              <div style={{
-                background: `linear-gradient(145deg, ${D.surface}, ${D.bg})`,
-                border: `1px solid ${D.border}`,
-                borderRadius: 20,
-                overflow: 'hidden',
-                position: 'relative',
-              }}>
-                {/* Accent top line */}
-                <div style={{ height: 3, background: accentColor, opacity: 0.9 }} />
-
-                {/* Background glow */}
-                <div style={{
-                  position: 'absolute', top: 0, right: 0,
-                  width: 280, height: 280,
-                  background: `radial-gradient(ellipse at top right, ${accentColor}12 0%, transparent 65%)`,
-                  pointerEvents: 'none',
-                }} />
-
-                <div style={{ padding: '2rem', position: 'relative' }}>
-                  {/* ── Row: Logo + Info ── */}
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem', marginBottom: '1.5rem' }}>
-
-                    {/* Logo — rounded square */}
-                    <div style={{
-                      width: 96, height: 96,
-                      borderRadius: '22%',
-                      overflow: 'hidden',
-                      flexShrink: 0,
-                      background: `${accentColor}10`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      boxShadow: `0 0 0 1.5px ${accentColor}30, 0 8px 32px rgba(0,0,0,0.4), 0 0 40px ${accentColor}18`,
-                    }}>
-                      <ProductLogo
-                        productName={product.name}
-                        dbImage={product.images?.[0]}
-                        size={96}
-                        bg="transparent"
-                      />
-                    </div>
-
-                    {/* Name + category + meta */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      {product.category?.name && (
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 5,
-                          padding: '0.22rem 0.75rem', borderRadius: 999,
-                          fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
-                          background: `${accentColor}18`, color: accentColor,
-                          border: `1px solid ${accentColor}30`, marginBottom: '0.6rem',
-                        }}>
-                          {product.category.name}
-                        </span>
-                      )}
-
-                      <h1 style={{ fontSize: 'clamp(1.3rem, 3.5vw, 1.85rem)', fontWeight: 800, color: D.text, marginBottom: '0.6rem', letterSpacing: '-0.025em', lineHeight: 1.2 }}>
-                        {productName}
-                      </h1>
-
-                      {/* Stars + stock */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                          {[1,2,3,4,5].map(s => (
-                            <Star key={s} style={{ width: 13, height: 13, fill: '#fbbf24', color: '#fbbf24' }} />
-                          ))}
-                          <span style={{ fontSize: '0.75rem', color: D.textSec, marginLeft: 4 }}>4.9</span>
-                        </div>
-                        {isOutOfStock ? (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0.18rem 0.6rem', borderRadius: 6, fontSize: '0.7rem', fontWeight: 700, background: D.redBg, color: D.red, border: `1px solid ${D.red}30` }}>
-                            <Ban style={{ width: 10, height: 10 }} /> {isAr ? 'غير متوفر' : 'Out of Stock'}
-                          </span>
-                        ) : (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0.18rem 0.6rem', borderRadius: 6, fontSize: '0.7rem', fontWeight: 700, background: D.greenBg, color: D.green, border: `1px solid ${D.greenBorder}` }}>
-                            <Check style={{ width: 10, height: 10 }} /> {isAr ? 'متوفر' : 'In Stock'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  {productDesc && (
-                    <p style={{ color: D.textSec, lineHeight: 1.75, fontSize: '0.88rem', borderTop: `1px solid ${D.border}`, paddingTop: '1.25rem' }}>
-                      {productDesc}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* ── Real subscription features ── */}
-              {features.length > 0 && (
-                <div style={{ background: `linear-gradient(145deg, ${D.surface}, ${D.bg})`, border: `1px solid ${D.border}`, borderRadius: 20, padding: '1.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                    <div style={{ width: 28, height: 28, borderRadius: 8, background: `${accentColor}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Check style={{ width: 14, height: 14, color: accentColor }} />
-                    </div>
-                    <h2 style={{ fontSize: '0.82rem', fontWeight: 700, color: D.textSec, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                      {t.product.features}
-                    </h2>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.65rem' }}>
-                    {features.map((f, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', padding: '0.65rem 0.85rem', borderRadius: 10, background: `${accentColor}08`, border: `1px solid ${accentColor}15` }}>
-                        <span style={{ color: accentColor, fontWeight: 800, fontSize: '0.85rem', lineHeight: 1.5, flexShrink: 0 }}>✓</span>
-                        <span style={{ fontSize: '0.835rem', color: D.textSec, lineHeight: 1.55 }}>{f}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* ── Full warranty banner ── */}
-              {product.fullWarranty && (
-                <div style={{ background: D.greenBg, border: `1px solid ${D.greenBorder}`, borderRadius: 16, padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: D.green, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Shield style={{ width: 22, height: 22, color: 'white' }} />
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 700, color: D.green, fontSize: '0.9rem' }}>
-                      🛡️ {isAr ? 'ضمان كامل شامل' : 'Full Warranty Included'}
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: `${D.green}aa`, marginTop: 2 }}>
-                      {isAr ? 'جميع الباقات تشمل ضمان كامل بدون تكلفة إضافية' : 'All plans include full warranty at no extra cost'}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ════════════
-                RIGHT PANEL
-            ════════════ */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', position: 'sticky', top: '1.5rem' }}>
-
-              {/* ── Plan selector ── */}
-              {product.variants && product.variants.length > 0 && (
-                <div style={{ background: `linear-gradient(145deg, ${D.surface}, ${D.bg})`, border: `1px solid ${D.border}`, borderRadius: 20, padding: '1.25rem' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: D.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.875rem' }}>
-                    {t.product.selectPlan}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {product.variants.map((v) => {
-                      const isSel = selectedVariant?.id === v.id;
-                      return (
-                        <button
-                          key={v.id}
-                          onClick={() => !v.outOfStock && setSelectedVariant(v)}
-                          disabled={v.outOfStock}
-                          style={{
-                            width: '100%', textAlign: 'start', cursor: v.outOfStock ? 'not-allowed' : 'pointer',
-                            padding: '0.875rem 1rem', borderRadius: 12,
-                            background: isSel ? `${accentColor}12` : D.surfaceUp,
-                            border: `1.5px solid ${v.outOfStock ? D.border : isSel ? accentColor : D.border}`,
-                            opacity: v.outOfStock ? 0.5 : 1,
-                            transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '0.75rem',
-                            fontFamily: 'inherit',
-                          }}
-                        >
-                          {/* Selection indicator */}
-                          <div style={{
-                            width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
-                            border: `2px solid ${isSel ? accentColor : D.border}`,
-                            background: isSel ? accentColor : 'transparent',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}>
-                            {isSel && <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#fff' }} />}
-                          </div>
-
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: isSel ? D.text : D.textSec, marginBottom: 2, textDecoration: v.outOfStock ? 'line-through' : 'none' }}>
-                              {v.title}
-                            </div>
-                            {v.duration && (
-                              <div style={{ fontSize: '0.73rem', color: D.textMuted }}>{v.duration}</div>
-                            )}
-                            {v.warrantyDays > 0 && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3, fontSize: '0.72rem', color: D.green }}>
-                                <Shield style={{ width: 11, height: 11 }} />
-                                {isAr ? `ضمان ${v.warrantyDays} يوم` : `${v.warrantyDays}-day warranty`}
-                              </div>
-                            )}
-                          </div>
-
-                          <div style={{ fontSize: '1rem', fontWeight: 800, color: isSel ? accentColor : D.textSec, textDecoration: v.outOfStock ? 'line-through' : 'none', whiteSpace: 'nowrap' }}>
-                            {v.price} {currencySymbol}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* ── Warranty upgrade ── */}
-              {!product.fullWarranty && warrantyOptions.length > 0 && (
-                <div style={{ background: `linear-gradient(145deg, ${D.surface}, ${D.bg})`, border: `1px solid ${D.border}`, borderRadius: 20, padding: '1.25rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: '0.875rem' }}>
-                    <Shield style={{ width: 14, height: 14, color: D.green }} />
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: D.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                      {isAr ? 'ضمان إضافي' : 'Extended Warranty'}
-                    </span>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(warrantyOptions.length + 1, 3)}, 1fr)`, gap: '0.5rem' }}>
-                    <button
-                      onClick={() => setSelectedWarrantyIndex(-1)}
-                      style={{ padding: '0.75rem 0.5rem', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', background: selectedWarrantyIndex === -1 ? `${accentColor}10` : D.surfaceUp, border: `1.5px solid ${selectedWarrantyIndex === -1 ? accentColor : D.border}` }}
-                    >
-                      <div style={{ fontSize: '0.72rem', color: D.textSec }}>{isAr ? 'بدون' : 'None'}</div>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: D.textSec, marginTop: 2 }}>{isAr ? 'مجاني' : 'Free'}</div>
-                    </button>
-                    {warrantyOptions.map((opt, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setSelectedWarrantyIndex(idx)}
-                        style={{ padding: '0.75rem 0.5rem', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', position: 'relative', background: selectedWarrantyIndex === idx ? `${accentColor}10` : D.surfaceUp, border: `1.5px solid ${selectedWarrantyIndex === idx ? accentColor : D.border}` }}
-                      >
-                        {selectedWarrantyIndex === idx && (
-                          <div style={{ position: 'absolute', top: -7, right: -7, width: 18, height: 18, borderRadius: '50%', background: D.green, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Check style={{ width: 11, height: 11, color: 'white' }} />
-                          </div>
-                        )}
-                        <div style={{ fontSize: '0.7rem', color: D.textSec }}>{isAr ? opt.labelAr || opt.label : opt.label}</div>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: D.green, marginTop: 2 }}>+{opt.price} {currencySymbol}</div>
-                        <div style={{ fontSize: '0.65rem', color: D.textMuted, marginTop: 1 }}>{opt.days} {isAr ? 'يوم' : 'days'}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* ── Price + Quantity box ── */}
-              <div style={{ background: `linear-gradient(145deg, ${D.surface}, ${D.bg})`, border: `1px solid ${D.border}`, borderRadius: 20, padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {/* Price row */}
-                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '1rem' }}>
-                  <div>
-                    <div style={{ fontSize: '0.72rem', color: D.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
-                      {t.product.totalPrice}
-                    </div>
-                    {appliedCoupon ? (
-                      <div>
-                        <div style={{ fontSize: '1rem', color: D.textMuted, textDecoration: 'line-through', lineHeight: 1 }}>{subtotal.toFixed(2)} {currencySymbol}</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 900, color: D.green, lineHeight: 1, marginTop: 2, letterSpacing: '-0.03em' }}>{finalPrice.toFixed(2)} {currencySymbol}</div>
-                      </div>
-                    ) : (
-                      <div style={{ fontSize: '2rem', fontWeight: 900, color: accentColor, lineHeight: 1, letterSpacing: '-0.03em' }}>{subtotal.toFixed(2)} {currencySymbol}</div>
-                    )}
-                  </div>
-
-                  {/* Quantity */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: D.surfaceUp, borderRadius: 12, border: `1px solid ${D.border}`, padding: '0.25rem' }}>
-                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={{ width: 34, height: 34, borderRadius: 9, border: 'none', background: 'transparent', cursor: 'pointer', color: D.textSec, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Minus style={{ width: 14, height: 14 }} />
-                    </button>
-                    <span style={{ fontSize: '1rem', fontWeight: 700, width: '1.75rem', textAlign: 'center', color: D.text }}>{quantity}</span>
-                    <button onClick={() => setQuantity(quantity + 1)} style={{ width: 34, height: 34, borderRadius: 9, border: 'none', background: 'transparent', cursor: 'pointer', color: D.textSec, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Plus style={{ width: 14, height: 14 }} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Coupon */}
-                {appliedCoupon ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', borderRadius: 10, background: D.greenBg, border: `1px solid ${D.greenBorder}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <Tag style={{ width: 15, height: 15, color: D.green }} />
-                      <span style={{ fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: 700, color: D.green }}>{appliedCoupon.code}</span>
-                      <span style={{ fontSize: '0.75rem', color: D.green }}>(-{appliedCoupon.isPercent ? `${appliedCoupon.discount}%` : `${appliedCoupon.discount} ${currencySymbol}`})</span>
-                    </div>
-                    <button onClick={handleRemoveCoupon} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer' }}><X style={{ width: 15, height: 15, color: D.green }} /></button>
-                  </div>
-                ) : (
-                  <div>
-                    <div style={{ display: 'flex', borderRadius: 10, border: `1px solid ${D.border}`, overflow: 'hidden' }}>
-                      <input
-                        type="text"
-                        placeholder={isAr ? 'كود الخصم' : 'Coupon code'}
-                        value={couponCode}
-                        onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }}
-                        style={{ flex: 1, minWidth: 0, padding: '0.65rem 0.75rem', background: D.surfaceUp, color: D.text, border: 'none', outline: 'none', fontSize: '0.85rem', fontFamily: 'monospace', textTransform: 'uppercase' }}
-                      />
-                      <button
-                        onClick={handleApplyCoupon}
-                        disabled={couponLoading || !couponCode.trim()}
-                        style={{ padding: '0.65rem 1rem', background: accentColor, color: 'white', fontSize: '0.82rem', fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0, opacity: (couponLoading || !couponCode.trim()) ? 0.5 : 1, fontFamily: 'inherit' }}
-                      >
-                        {couponLoading ? '...' : (isAr ? 'تطبيق' : 'Apply')}
-                      </button>
-                    </div>
-                    {couponError && <p style={{ fontSize: '0.75rem', color: D.red, marginTop: '0.375rem' }}>{couponError}</p>}
-                  </div>
-                )}
-
-                {/* Customer form */}
-                {showOrderForm && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                    <input type="text" placeholder={t.product.yourName} value={customerName} onChange={(e) => setCustomerName(e.target.value)} style={inputSt} />
-                    <input type="tel" placeholder={t.product.yourPhone} value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} style={inputSt} />
-                  </div>
-                )}
-
-                {/* CTA Buttons */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                  {/* WhatsApp */}
-                  <button
-                    onClick={handleWhatsAppOrder}
-                    disabled={!canPurchase}
-                    style={{
-                      width: '100%', padding: '0.9rem 1.5rem', borderRadius: 12, fontWeight: 700, fontSize: '0.9rem',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                      border: 'none', fontFamily: 'inherit', cursor: canPurchase ? 'pointer' : 'not-allowed',
-                      transition: 'all 0.15s',
-                      ...(canPurchase
-                        ? { background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: 'white', boxShadow: '0 6px 20px rgba(34,197,94,0.3)' }
-                        : { background: D.surfaceUp, color: D.textMuted }),
-                    }}
-                  >
-                    {!canPurchase
-                      ? <><Ban style={{ width: 18, height: 18 }} /> {isAr ? 'غير متوفر' : 'Out of Stock'}</>
-                      : <><MessageCircle style={{ width: 18, height: 18 }} /> {t.product.orderWhatsApp}</>
-                    }
-                  </button>
-
-                  {/* Add to Cart */}
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={!canPurchase}
-                    style={{
-                      width: '100%', padding: '0.9rem 1.5rem', borderRadius: 12, fontWeight: 700, fontSize: '0.9rem',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                      fontFamily: 'inherit', cursor: canPurchase ? 'pointer' : 'not-allowed',
-                      transition: 'all 0.15s',
-                      ...(addedToCart
-                        ? { background: `${D.green}15`, border: `1.5px solid ${D.green}`, color: D.green }
-                        : canPurchase
-                          ? { background: `${accentColor}15`, border: `1.5px solid ${accentColor}50`, color: accentColor }
-                          : { background: D.surfaceUp, border: `1.5px solid ${D.border}`, color: D.textMuted }),
-                    }}
-                  >
-                    {addedToCart
-                      ? <><Check style={{ width: 18, height: 18 }} /> {t.product.added}</>
-                      : <><ShoppingCart style={{ width: 18, height: 18 }} /> {t.product.addToCart}</>
-                    }
-                  </button>
-                </div>
-              </div>
-
-              {/* ── Quick info pills ── */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
-                {[
-                  { icon: Shield, label: isAr ? 'بدون حساب' : 'No Account Needed', color: D.green },
-                  { icon: Shield, label: isAr ? 'أصلي 100%' : '100% Genuine', color: accentColor },
-                  { icon: Star, label: isAr ? `${plansCount} خطط` : `${plansCount} Plans`, color: '#fbbf24' },
-                  { icon: MessageCircle, label: isAr ? 'دعم عبر واتساب' : 'WhatsApp Support', color: '#60a5fa' },
-                ].map((item, i) => (
-                  <div key={i} style={{
-                    padding: '0.75rem 0.875rem', borderRadius: 12,
-                    background: D.surface, border: `1px solid ${D.border}`,
-                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                  }}>
-                    <item.icon style={{ width: 14, height: 14, color: item.color, flexShrink: 0 }} />
-                    <span style={{ fontSize: '0.75rem', color: D.textSec, fontWeight: 500 }}>{item.label}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* ── View all products link ── */}
-              <Link
-                href="/products"
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                  padding: '0.75rem', borderRadius: 12, border: `1px solid ${D.border}`,
-                  color: D.textMuted, fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none',
-                  background: D.surface, transition: 'all 0.15s',
-                }}
-              >
-                <ExternalLink style={{ width: 13, height: 13 }} />
-                {isAr ? 'تصفح المنتجات' : 'Browse All Products'}
-              </Link>
-            </div>
-          </div>
-
-          {/* ── Responsive breakpoints ── */}
-          <style>{`
-            @media (max-width: 840px) {
-              .pdp-grid { grid-template-columns: 1fr !important; }
-            }
-          `}</style>
-        </div>
-      </div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ProductPageClient product={product} relatedProducts={relatedProducts} />
     </>
   );
 }

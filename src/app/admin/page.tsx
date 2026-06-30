@@ -5,14 +5,14 @@ import { useSettings } from '@/lib/settings-context';
 import {
   ShoppingBag, Package, DollarSign, FolderOpen,
   TrendingUp, Clock, Calendar, CalendarDays, BarChart3, ArrowUpRight,
+  AlertCircle, Users, Star,
 } from 'lucide-react';
 import { adminFetch } from '@/lib/admin-fetch';
-
 
 const A = {
   bg: '#06070a', surface: '#0f1117', card: '#141928',
   border: 'rgba(255,255,255,0.07)', text: '#E8E8E8',
-  textSec: '#b0b6c3', textMuted: '#7a7a7a', accent: '#a78bfa',  /* textMuted: was #686868 */
+  textSec: '#b0b6c3', textMuted: '#7a7a7a', accent: '#a78bfa',
 };
 
 interface DashboardData {
@@ -27,32 +27,35 @@ interface DashboardData {
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  New:          'adm-badge--blue',
+  New:            'adm-badge--blue',
   SentToWhatsApp: 'adm-badge--green',
-  InProgress:   'adm-badge--amber',
-  Completed:    'adm-badge--green',
-  Cancelled:    'adm-badge--red',
+  InProgress:     'adm-badge--amber',
+  Completed:      'adm-badge--green',
+  Cancelled:      'adm-badge--red',
 };
 
 export default function AdminDashboard() {
-  const [data,       setData]       = useState<DashboardData | null>(null);
-  const [loading,    setLoading]    = useState(true);
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [revenueTab, setRevenueTab] = useState<'daily' | 'monthly'>('daily');
   const { currencySymbol } = useSettings();
 
   useEffect(() => {
     adminFetch('/api/admin/dashboard')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to load dashboard');
+        return r.json();
+      })
       .then((d) => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch((err) => { setError(err.message); setLoading(false); });
   }, []);
-
 
   const chartData = revenueTab === 'daily' ? (data?.dailyRevenue || []) : (data?.monthlyRevenue || []);
   const maxAmount = Math.max(...chartData.map((d) => d.amount), 1);
 
-  const card = (content: React.ReactNode, style?: React.CSSProperties) => (
-    <div style={{ background: A.card, border: `1px solid ${A.border}`, borderRadius: 16, ...style }}>
+  const card = (content: React.ReactNode, style?: React.CSSProperties, key?: string) => (
+    <div key={key} style={{ background: A.card, border: `1px solid ${A.border}`, borderRadius: 16, ...style }}>
       {content}
     </div>
   );
@@ -68,19 +71,53 @@ export default function AdminDashboard() {
           </div>
         ))}
       </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '1rem' }}>
+        {[1,2,3].map((i) => (
+          <div key={i} style={{ background: A.card, border: `1px solid ${A.border}`, borderRadius: 16, padding: '1.25rem' }}>
+            <div className="sk" style={{ height: 44, borderRadius: 12 }} />
+          </div>
+        ))}
+      </div>
+      {card(
+        <div style={{ padding: '1.25rem' }}>
+          <div className="sk" style={{ height: 20, width: '30%', borderRadius: 6, marginBottom: 16 }} />
+          {[1,2,3,4,5].map((i) => (
+            <div key={i} className="sk" style={{ height: 28, borderRadius: 99, marginBottom: 10 }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  if (error) return (
+    <div className="admin-empty">
+      <div className="admin-empty-icon" style={{ background: 'rgba(239,68,68,0.1)' }}>
+        <AlertCircle style={{ width: 28, height: 28, color: '#f87171' }} />
+      </div>
+      <p style={{ color: '#f87171', fontWeight: 600, marginBottom: '0.5rem' }}>Failed to load dashboard</p>
+      <p style={{ fontSize: '0.8rem' }}>{error}</p>
+      <button
+        onClick={() => { setError(''); setLoading(true); adminFetch('/api/admin/dashboard').then(r => r.json()).then(d => { setData(d); setLoading(false); }).catch(e => { setError(e.message); setLoading(false); }); }}
+        className="adm-btn adm-btn--ghost"
+        style={{ marginTop: '1rem' }}
+      >
+        Try Again
+      </button>
     </div>
   );
 
   return (
     <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-      {/* ── Stat Cards ── */}
+      {/* Stat Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '1rem' }}>
         {[
-          { icon: ShoppingBag, label: 'Total Orders',   value: data?.totalOrders ?? 0,   grad: 'from-violet-500 to-purple-600', col: '#8b5cf6' },
-          { icon: DollarSign,  label: 'Total Revenue',  value: `${(data?.totalRevenue ?? 0).toFixed(2)} ${currencySymbol}`, grad: 'from-emerald-500 to-teal-600', col: '#10b981' },
-          { icon: Package,     label: 'Products',       value: data?.totalProducts ?? 0,  grad: 'from-blue-500 to-cyan-600', col: '#3b82f6' },
-          { icon: FolderOpen,  label: 'Categories',     value: data?.totalCategories ?? 0,grad: 'from-amber-500 to-orange-600', col: '#f59e0b' },
+          { icon: ShoppingBag, label: 'Total Orders',  value: data?.totalOrders ?? 0,  col: '#8b5cf6' },
+          { icon: DollarSign,  label: 'Total Revenue', value: `${(data?.totalRevenue ?? 0).toFixed(2)} ${currencySymbol}`, col: '#10b981' },
+          { icon: Package,     label: 'Products',      value: data?.totalProducts ?? 0, col: '#3b82f6' },
+          { icon: FolderOpen,  label: 'Categories',    value: data?.totalCategories ?? 0, col: '#f59e0b' },
+          { icon: Users,       label: 'Pending Orders', value: data?.ordersByStatus?.['New'] ?? 0, col: '#ec4899' },
+          { icon: Star,        label: 'Completed',     value: data?.ordersByStatus?.['Completed'] ?? 0, col: '#14b8a6' },
         ].map((stat, i) => (
           <div key={i} className="card-stagger" style={{ '--delay': `${i * 60}ms` } as React.CSSProperties}>
             {card(
@@ -96,15 +133,15 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* ── Revenue Period ── */}
+      {/* Revenue Period */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '1rem' }}>
         {[
-          { icon: Clock,       label: 'Today',      value: data?.todayRevenue ?? 0,  color: '#3b82f6' },
-          { icon: CalendarDays,label: 'This Week',   value: data?.weekRevenue ?? 0,   color: '#8b5cf6' },
-          { icon: Calendar,    label: 'This Month',  value: data?.monthRevenue ?? 0,  color: '#10b981' },
+          { icon: Clock,        label: 'Today',      value: data?.todayRevenue ?? 0, color: '#3b82f6' },
+          { icon: CalendarDays,  label: 'This Week',  value: data?.weekRevenue ?? 0,  color: '#8b5cf6' },
+          { icon: Calendar,      label: 'This Month', value: data?.monthRevenue ?? 0, color: '#10b981' },
         ].map((p) => (
           card(
-            <div key={p.label} style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: `${p.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <p.icon style={{ width: 22, height: 22, color: p.color }} />
               </div>
@@ -113,11 +150,13 @@ export default function AdminDashboard() {
                 <p style={{ fontSize: '1.25rem', fontWeight: 700, color: A.text }}>{p.value.toFixed(2)} {currencySymbol}</p>
               </div>
             </div>,
+            undefined,
+            p.label,
           )
         ))}
       </div>
 
-      {/* ── Revenue Chart ── */}
+      {/* Revenue Chart */}
       {card(
         <div style={{ padding: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -167,10 +206,9 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* ── Recent Orders + Top Products ── */}
+      {/* Recent Orders + Top Products */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '1.25rem' }}>
 
-        {/* Recent Orders */}
         {card(
           <div style={{ padding: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
@@ -184,7 +222,7 @@ export default function AdminDashboard() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {data?.recentOrders?.length ? data.recentOrders.slice(0, 5).map((order) => (
-                <div key={order.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', borderRadius: 12, background: 'rgba(255,255,255,0.03)' }}>
+                <div key={order.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', borderRadius: 12, background: 'rgba(255,255,255,0.03)', transition: 'background 0.15s' }}>
                   <div>
                     <p style={{ fontSize: '0.82rem', fontWeight: 600, color: A.text }}>{order.orderCode}</p>
                     <p style={{ fontSize: '0.72rem', color: A.textMuted }}>{order.customerName}</p>
@@ -194,12 +232,16 @@ export default function AdminDashboard() {
                     <span className={`adm-badge ${STATUS_BADGE[order.status] ?? 'adm-badge--gray'}`}>{order.status}</span>
                   </div>
                 </div>
-              )) : <p style={{ textAlign: 'center', color: A.textMuted, padding: '1.5rem 0', fontSize: '0.875rem' }}>No orders yet</p>}
+              )) : (
+                <div className="admin-empty" style={{ padding: '1.5rem 0' }}>
+                  <ShoppingBag style={{ width: 24, height: 24, color: A.textMuted, margin: '0 auto 0.5rem', display: 'block' }} />
+                  <p>No orders yet</p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Top Products */}
         {card(
           <div style={{ padding: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
@@ -212,7 +254,7 @@ export default function AdminDashboard() {
               </a>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {data?.topProducts?.map((product, i) => (
+              {data?.topProducts?.length ? data.topProducts.map((product, i) => (
                 <div key={product.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', borderRadius: 12, background: 'rgba(255,255,255,0.03)' }}>
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, color: A.textMuted, width: 20, textAlign: 'center' }}>#{i + 1}</span>
                   <div style={{ width: 36, height: 36, borderRadius: '22%', background: 'rgba(139,92,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
@@ -223,7 +265,12 @@ export default function AdminDashboard() {
                   <p style={{ flex: 1, fontSize: '0.82rem', fontWeight: 500, color: A.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.name}</p>
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, color: A.accent, flexShrink: 0 }}>{product.orderCount} orders</span>
                 </div>
-              )) ?? <p style={{ textAlign: 'center', color: A.textMuted, padding: '1.5rem 0', fontSize: '0.875rem' }}>No data yet</p>}
+              )) : (
+                <div className="admin-empty" style={{ padding: '1.5rem 0' }}>
+                  <TrendingUp style={{ width: 24, height: 24, color: A.textMuted, margin: '0 auto 0.5rem', display: 'block' }} />
+                  <p>No data yet</p>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -1,19 +1,20 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useTheme } from 'next-themes';
 import { useI18n } from '@/lib/i18n';
 import AnimatedLogo from '@/components/AnimatedLogo';
 
-const C = {
-    bg: '#0f1219', border: '#374151',
-    text: '#f9fafb', textSec: '#6b7280',
-    accent: '#a78bfa',
-};
-
 export default function Footer() {
     const { t } = useI18n();
-
-    const linkStyle: React.CSSProperties = { fontSize: '0.875rem', color: C.textSec, textDecoration: 'none' };
+    const { resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
+    const isDark = !mounted || resolvedTheme !== 'light';
+    const C = isDark
+        ? { bg: '#0f1219', border: '#1f2937', text: '#f9fafb', textSec: '#6b7280' }
+        : { bg: '#e8eaf4', border: 'rgba(0,0,0,0.09)', text: '#0d0f14', textSec: '#4b5563' };
 
     return (
         <footer style={{ background: C.bg, borderTop: `1px solid ${C.border}` }}>
@@ -32,12 +33,10 @@ export default function Footer() {
                                 { href: '/products', label: t.nav.products },
                                 { href: '/contact', label: t.nav.contact },
                                 { href: '/cart', label: t.nav.cart },
+                                { href: '/order', label: 'Track Order' },
                             ].map((link) => (
                                 <li key={link.href}>
-                                    <Link href={link.href} style={linkStyle}
-                                        onMouseEnter={(e) => e.currentTarget.style.color = C.accent}
-                                        onMouseLeave={(e) => e.currentTarget.style.color = C.textSec}
-                                    >{link.label}</Link>
+                                    <Link href={link.href} className="footer-link">{link.label}</Link>
                                 </li>
                             ))}
                         </ul>
@@ -52,10 +51,7 @@ export default function Footer() {
                                 { href: '/refund', label: t.footer.refund },
                             ].map((link) => (
                                 <li key={link.href}>
-                                    <Link href={link.href} style={linkStyle}
-                                        onMouseEnter={(e) => e.currentTarget.style.color = C.accent}
-                                        onMouseLeave={(e) => e.currentTarget.style.color = C.textSec}
-                                    >{link.label}</Link>
+                                    <Link href={link.href} className="footer-link">{link.label}</Link>
                                 </li>
                             ))}
                         </ul>

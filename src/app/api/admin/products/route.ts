@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/auth';
+import { cacheInvalidate } from '@/lib/api-cache';
 
 export async function GET(request: NextRequest) {
     const auth = authenticateRequest(request);
@@ -85,6 +86,7 @@ export async function POST(request: NextRequest) {
             include: { category: true, variants: { orderBy: { displayOrder: 'asc' } } },
         });
 
+        cacheInvalidate('products-active');
         return NextResponse.json({
             ...product,
             images: JSON.parse(product.images),

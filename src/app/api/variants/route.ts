@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/auth';
+import { cacheInvalidate } from '@/lib/api-cache';
 
 export async function POST(request: NextRequest) {
     try {
@@ -23,6 +24,7 @@ export async function POST(request: NextRequest) {
             },
         });
 
+        cacheInvalidate('products-active');
         return NextResponse.json(variant);
     } catch {
         return NextResponse.json({ error: 'Failed to create variant' }, { status: 500 });

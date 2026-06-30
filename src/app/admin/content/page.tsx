@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { Save, Check, Globe, ChevronDown, ChevronUp } from 'lucide-react';
 import { defaultEn, defaultAr } from '@/lib/i18n';
 import { adminJsonFetch } from '@/lib/admin-fetch';
@@ -394,10 +393,7 @@ export default function AdminContentPage() {
 
     return (
         <div className="max-w-4xl space-y-6">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-            >
+            <div className="fade-up">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
@@ -518,7 +514,7 @@ export default function AdminContentPage() {
                 >
                     {saved ? <><Check className="w-5 h-5" /> Saved!</> : <><Save className="w-5 h-5" /> {saving ? 'Saving...' : 'Save All Content'}</>}
                 </button>
-            </motion.div>
+            </div>
         </div>
     );
 }

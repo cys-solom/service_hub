@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { useSettings } from '@/lib/settings-context';
 import { adminFetch, adminJsonFetch } from '@/lib/admin-fetch';
+import { AdminToast, useAdminToast } from '@/components/admin/AdminToast';
+import { AdminDeleteModal } from '@/components/admin/AdminDeleteModal';
 
 
 const A = {
@@ -73,6 +75,9 @@ export default function AdminProductsPage() {
     const [showForm, setShowForm] = useState(false);
     const [editingProduct, setEditingProduct] = useState<ProductData | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [deleteTarget, setDeleteTarget] = useState<ProductData | null>(null);
+    const [deleteVariantTarget, setDeleteVariantTarget] = useState<string | null>(null);
+    const { toast, showToast, closeToast } = useAdminToast();
     const [formData, setFormData] = useState({
         name: '',
         nameAr: '',
@@ -110,6 +115,8 @@ export default function AdminProductsPage() {
     const [unavailableDate, setUnavailableDate] = useState('');
     const [loadingAction, setLoadingAction] = useState<string | null>(null);
     const [formWarrantyOptions, setFormWarrantyOptions] = useState<Array<{ label: string; labelAr: string; days: number; price: number }>>([]);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [bulkLoading, setBulkLoading] = useState(false);
 
 
     const fetchData = async () => {
@@ -123,7 +130,7 @@ export default function AdminProductsPage() {
             setProducts(Array.isArray(prods) ? prods : []);
             setCategories(Array.isArray(cats) ? cats : []);
         } catch {
-            console.error('Failed to fetch');
+            showToast('error', 'Failed to load products');
         }
         setLoading(false);
     };
@@ -162,10 +169,13 @@ export default function AdminProductsPage() {
         const url = editingProduct ? `/api/products/${editingProduct.id}` : '/api/products';
         const method = editingProduct ? 'PUT' : 'POST';
 
-        await adminJsonFetch(url, {
-            method,
-            body: JSON.stringify(body),
-        });
+        try {
+            const res = await adminJsonFetch(url, { method, body: JSON.stringify(body) });
+            if (!res.ok) throw new Error('Failed');
+            showToast('success', editingProduct ? 'Product updated' : 'Product created');
+        } catch {
+            showToast('error', 'Failed to save product');
+        }
 
         setShowForm(false);
         setEditingProduct(null);
@@ -199,10 +209,19 @@ export default function AdminProductsPage() {
         setShowForm(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Delete this product?')) return;
-        await adminFetch(`/api/products/${id}`, { method: 'DELETE' });
-        fetchData();
+    const handleDelete = async () => {
+        if (!deleteTarget) return;
+        const prev = [...products];
+        setProducts(p => p.filter(x => x.id !== deleteTarget.id));
+        setDeleteTarget(null);
+        try {
+            const res = await adminFetch(`/api/products/${deleteTarget.id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed');
+            showToast('success', 'Product deleted');
+        } catch {
+            setProducts(prev);
+            showToast('error', 'Failed to delete product');
+        }
     };
 
     const handleToggleActive = async (product: ProductData) => {
@@ -307,10 +326,18 @@ export default function AdminProductsPage() {
         fetchData();
     };
 
-    const handleDeleteVariant = async (variantId: string) => {
-        if (!confirm('Delete this variant?')) return;
-        await adminFetch(`/api/variants/${variantId}`, { method: 'DELETE' });
-        fetchData();
+    const handleDeleteVariant = async () => {
+        if (!deleteVariantTarget) return;
+        const id = deleteVariantTarget;
+        setDeleteVariantTarget(null);
+        try {
+            const res = await adminFetch(`/api/variants/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed');
+            showToast('success', 'Variant deleted');
+            fetchData();
+        } catch {
+            showToast('error', 'Failed to delete variant');
+        }
     };
 
     const handleStartEditVariant = (variant: ProductData['variants'][0]) => {
@@ -469,13 +496,105 @@ export default function AdminProductsPage() {
         })
         .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 
+    const allFilteredSelected = filteredProducts.length > 0 && filteredProducts.every(p => selectedIds.has(p.id));
+    const someSelected = selectedIds.size > 0;
+
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        if (allFilteredSelected) {
+            setSelectedIds(prev => {
+                const next = new Set(prev);
+                filteredProducts.forEach(p => next.delete(p.id));
+                return next;
+            });
+        } else {
+            setSelectedIds(prev => {
+                const next = new Set(prev);
+                filteredProducts.forEach(p => next.add(p.id));
+                return next;
+            });
+        }
+    };
+
+    const handleBulkAction = async (action: 'activate' | 'deactivate' | 'delete') => {
+        if (selectedIds.size === 0) return;
+        const ids = Array.from(selectedIds);
+        setBulkLoading(true);
+        try {
+            if (action === 'delete') {
+                if (!window.confirm(`Delete ${ids.length} product(s)? This cannot be undone.`)) { setBulkLoading(false); return; }
+                await Promise.all(ids.map(id => adminFetch(`/api/products/${id}`, { method: 'DELETE' })));
+                setProducts(prev => prev.filter(p => !selectedIds.has(p.id)));
+                showToast('success', `${ids.length} product(s) deleted`);
+            } else {
+                const isActive = action === 'activate';
+                await Promise.all(ids.map(id => adminJsonFetch(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify({ isActive }) })));
+                setProducts(prev => prev.map(p => selectedIds.has(p.id) ? { ...p, isActive } : p));
+                showToast('success', `${ids.length} product(s) ${action}d`);
+            }
+            setSelectedIds(new Set());
+        } catch {
+            showToast('error', 'Bulk action failed');
+        }
+        setBulkLoading(false);
+    };
+
     return (
         <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <AdminToast toast={toast} onClose={closeToast} />
+
+            {deleteTarget && (
+                <AdminDeleteModal
+                    title="Delete Product"
+                    message={`Delete "${deleteTarget.name}"? All variants will also be deleted. This cannot be undone.`}
+                    onConfirm={handleDelete}
+                    onCancel={() => setDeleteTarget(null)}
+                />
+            )}
+            {deleteVariantTarget && (
+                <AdminDeleteModal
+                    title="Delete Variant"
+                    message="Delete this subscription plan? This cannot be undone."
+                    onConfirm={handleDeleteVariant}
+                    onCancel={() => setDeleteVariantTarget(null)}
+                />
+            )}
+
+            {/* Bulk action bar */}
+            {someSelected && (
+                <div style={{ position: 'sticky', top: 0, zIndex: 30, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 14, padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', backdropFilter: 'blur(8px)' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#a78bfa', minWidth: 'max-content' }}>{selectedIds.size} selected</span>
+                    <div style={{ flex: 1 }} />
+                    <button onClick={() => handleBulkAction('activate')} disabled={bulkLoading} style={{ padding: '0.45rem 0.875rem', borderRadius: 9, border: '1px solid rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.1)', color: '#22c55e', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: bulkLoading ? 0.5 : 1 }}>
+                        Activate
+                    </button>
+                    <button onClick={() => handleBulkAction('deactivate')} disabled={bulkLoading} style={{ padding: '0.45rem 0.875rem', borderRadius: 9, border: '1px solid rgba(251,191,36,0.3)', background: 'rgba(251,191,36,0.1)', color: '#fbbf24', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: bulkLoading ? 0.5 : 1 }}>
+                        Deactivate
+                    </button>
+                    <button onClick={() => handleBulkAction('delete')} disabled={bulkLoading} style={{ padding: '0.45rem 0.875rem', borderRadius: 9, border: '1px solid rgba(248,113,113,0.3)', background: 'rgba(248,113,113,0.1)', color: '#f87171', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: bulkLoading ? 0.5 : 1 }}>
+                        Delete
+                    </button>
+                    <button onClick={() => setSelectedIds(new Set())} style={{ padding: '0.45rem 0.75rem', borderRadius: 9, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#9a9a9a', fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <X style={{ width: 13, height: 13 }} />
+                    </button>
+                </div>
+            )}
+
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                <div>
-                  <h1 style={{ fontSize: '1.1rem', fontWeight: 700, color: A.text, margin: 0 }}>Products</h1>
-                  <p style={{ fontSize: '0.75rem', color: A.textMuted, margin: 0 }}>{filteredProducts.length} products</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <input type="checkbox" checked={allFilteredSelected} onChange={toggleSelectAll} style={{ width: 16, height: 16, accentColor: '#7c3aed', cursor: 'pointer' }} title="Select all" />
+                    <div>
+                        <h1 style={{ fontSize: '1.1rem', fontWeight: 700, color: A.text, margin: 0 }}>Products</h1>
+                        <p style={{ fontSize: '0.75rem', color: A.textMuted, margin: 0 }}>{filteredProducts.length} products</p>
+                    </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                     <div style={{ position: 'relative' }}>
@@ -913,14 +1032,21 @@ export default function AdminProductsPage() {
                             key={product.id}
                             className="card-stagger"
                             style={{
-                                background: '#141928',
-                                border: `1px solid ${isUnavailable(product) ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.07)'}`,
+                                background: selectedIds.has(product.id) ? 'rgba(20,16,40,0.95)' : '#141928',
+                                border: `1px solid ${selectedIds.has(product.id) ? 'rgba(139,92,246,0.4)' : isUnavailable(product) ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.07)'}`,
                                 borderRadius: 16,
                                 padding: '1.25rem',
                             }}
                         >
                             <div className="flex items-start justify-between gap-4">
                                 <div className="flex items-center gap-4">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedIds.has(product.id)}
+                                        onChange={() => toggleSelect(product.id)}
+                                        onClick={e => e.stopPropagation()}
+                                        style={{ width: 15, height: 15, accentColor: '#7c3aed', cursor: 'pointer', flexShrink: 0, marginTop: 2 }}
+                                    />
                                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center overflow-hidden shrink-0">
                                         {product.images?.[0] ? (
                                             <img src={product.images[0]} alt="" className="w-8 h-8 object-contain" />
@@ -1033,7 +1159,7 @@ export default function AdminProductsPage() {
                                         <Edit className="w-4 h-4 text-blue-500" />
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(product.id)}
+                                        onClick={() => setDeleteTarget(product)}
                                         className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition"
                                     >
                                         <Trash2 className="w-4 h-4 text-red-500" />
@@ -1160,7 +1286,7 @@ export default function AdminProductsPage() {
                                                             <Ban className="w-3 h-3" />
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDeleteVariant(v.id)}
+                                                            onClick={() => setDeleteVariantTarget(v.id)}
                                                             className="p-1 text-red-400 hover:text-red-500"
                                                         >
                                                             <X className="w-3 h-3" />

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/auth';
+import { cacheInvalidate } from '@/lib/api-cache';
 
 export async function GET(
     request: NextRequest,
@@ -76,6 +77,7 @@ export async function PUT(
             include: { category: true, variants: true },
         });
 
+        cacheInvalidate('products-active');
         return NextResponse.json({
             ...product,
             images: JSON.parse(product.images),
@@ -99,6 +101,7 @@ export async function DELETE(
 
         const { id } = await params;
         await prisma.product.delete({ where: { id } });
+        cacheInvalidate('products-active');
         return NextResponse.json({ message: 'Product deleted' });
     } catch {
         return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });

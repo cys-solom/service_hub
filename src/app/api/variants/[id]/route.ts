@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/auth';
+import { cacheInvalidate } from '@/lib/api-cache';
 
 export async function PUT(
     request: NextRequest,
@@ -29,6 +30,7 @@ export async function PUT(
             data: allowedUpdates,
         });
 
+        cacheInvalidate('products-active');
         return NextResponse.json(variant);
     } catch {
         return NextResponse.json({ error: 'Failed to update variant' }, { status: 500 });
@@ -47,6 +49,7 @@ export async function DELETE(
 
         const { id } = await params;
         await prisma.productVariant.delete({ where: { id } });
+        cacheInvalidate('products-active');
         return NextResponse.json({ message: 'Variant deleted' });
     } catch {
         return NextResponse.json({ error: 'Failed to delete variant' }, { status: 500 });

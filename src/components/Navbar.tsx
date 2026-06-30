@@ -6,26 +6,36 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useCart } from '@/lib/cart-context';
 import { useI18n } from '@/lib/i18n';
+import { useSettings } from '@/lib/settings-context';
 import AnimatedLogo from '@/components/AnimatedLogo';
-import { ShoppingCart, Sun, Moon, Globe, Home, Package, Phone, X, Menu } from 'lucide-react';
+import { ShoppingCart, Sun, Moon, Globe, Home, Package, Phone } from 'lucide-react';
 
-const C = {
+const DARK_C = {
   bgNav: 'rgba(6,7,10,0.88)', border: 'rgba(255,255,255,0.08)',
   text: '#9ca3af', textHover: '#a78bfa',
   hoverBg: 'rgba(255,255,255,0.05)',
+  activeText: '#a78bfa', activeBg: 'rgba(139,92,246,0.10)',
+  activeAccent: '#a78bfa',
+};
+const LIGHT_C = {
+  bgNav: 'rgba(240,241,248,0.96)', border: 'rgba(0,0,0,0.09)',
+  text: '#1f2937',
+  textHover: '#0d0f14',
+  hoverBg: 'rgba(0,0,0,0.06)',
+  activeText: '#4c1d95', activeBg: 'rgba(91,33,182,0.12)',
+  activeAccent: '#5b21b6',
 };
 
 export default function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const C = mounted && resolvedTheme === 'light' ? LIGHT_C : DARK_C;
   const { itemCount } = useCart();
   const { t, locale, setLocale } = useI18n();
+  const { displaySymbol, toggleDisplayCurrency, canSwitchCurrency, displayCurrency } = useSettings();
   const pathname = usePathname();
 
   useEffect(() => { setMounted(true); }, []);
-  // Close menu on route change
-  useEffect(() => { setIsOpen(false); }, [pathname]);
 
   const navLinks = [
     { href: '/',         label: t.nav.home,     icon: Home    },
@@ -55,8 +65,8 @@ export default function Navbar() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '3.75rem' }}>
             <AnimatedLogo href="/" size="md" />
 
-            {/* Desktop links */}
-            <div className="hidden md:flex" style={{ alignItems: 'center', gap: '0.25rem' }}>
+            {/* Nav links — visible on sm+ */}
+            <div className="hidden sm:flex" style={{ alignItems: 'center', gap: '0.25rem' }}>
               {navLinks.map((link) => {
                 const active = pathname === link.href;
                 return (
@@ -64,9 +74,9 @@ export default function Navbar() {
                     padding: '0.4rem 0.85rem',
                     borderRadius: '0.75rem',
                     fontSize: '0.875rem',
-                    fontWeight: 500,
-                    color: active ? '#a78bfa' : C.text,
-                    background: active ? 'rgba(139,92,246,0.1)' : 'transparent',
+                    fontWeight: 600,
+                    color: active ? C.activeText : C.text,
+                    background: active ? C.activeBg : 'transparent',
                     textDecoration: 'none',
                     transition: 'all 0.2s',
                   }}
@@ -87,6 +97,18 @@ export default function Navbar() {
 
             {/* Right actions */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.125rem' }}>
+              {/* Currency toggle — only shown when exchange rate is configured */}
+              {mounted && canSwitchCurrency && (
+                <button
+                  onClick={toggleDisplayCurrency}
+                  style={{ ...iconBtn, fontSize: '0.72rem', fontWeight: 700, gap: '0.2rem', minWidth: 'auto', padding: '0.4rem 0.6rem', letterSpacing: '0.02em', color: displayCurrency === 'usd' ? C.activeText : C.text, background: displayCurrency === 'usd' ? C.activeBg : 'none', borderRadius: '0.625rem' }}
+                  aria-label="Toggle display currency"
+                  title={displayCurrency === 'usd' ? 'Switch to EGP' : 'Switch to USD'}
+                >
+                  {displaySymbol}
+                </button>
+              )}
+
               <button
                 onClick={() => setLocale(locale === 'en' ? 'ar' : 'en')}
                 style={iconBtn} aria-label="Toggle language"
@@ -121,47 +143,10 @@ export default function Navbar() {
                 )}
               </Link>
 
-              {/* Hamburger (tablet only — phones use bottom nav) */}
-              <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="hidden sm:flex md:hidden"
-                style={iconBtn}
-                aria-label="Menu"
-              >
-                {isOpen ? <X style={{ width: 20, height: 20 }} /> : <Menu style={{ width: 20, height: 20 }} />}
-              </button>
             </div>
           </div>
         </div>
 
-        {/* Tablet dropdown */}
-        {isOpen && (
-          <div
-            className="hidden sm:block md:hidden"
-            style={{
-              borderTop: `1px solid ${C.border}`,
-              background: 'rgba(6,7,10,0.97)',
-              backdropFilter: 'blur(24px)',
-              padding: '0.5rem 1rem 1rem',
-            }}
-          >
-            {navLinks.map((link) => {
-              const active = pathname === link.href;
-              return (
-                <Link key={link.href} href={link.href} style={{
-                  display: 'flex', alignItems: 'center', gap: '0.75rem',
-                  padding: '0.75rem 1rem', borderRadius: '0.75rem',
-                  fontSize: '0.875rem', fontWeight: 500,
-                  color: active ? '#a78bfa' : C.text, textDecoration: 'none',
-                  background: active ? 'rgba(139,92,246,0.08)' : 'transparent',
-                }}>
-                  <link.icon style={{ width: 18, height: 18 }} />
-                  {link.label}
-                </Link>
-              );
-            })}
-          </div>
-        )}
       </nav>
 
       {/* ── Bottom Tab Bar (phones only, max-width 640px) ── */}

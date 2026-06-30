@@ -32,12 +32,12 @@ function buildSources(domain: string, extras: string[] = []): string[] {
 // Official domains for each product — used to get the best logo
 const PRODUCT_DOMAINS: Record<string, { domain: string; extras?: string[] }> = {
   // ── AI Chat & Text ──
-  chatgpt:     { domain: 'openai.com' },
-  openai:      { domain: 'openai.com' },
+  chatgpt:     { domain: 'openai.com',              extras: ['/logos/chatgpt.png'] },
+  openai:      { domain: 'openai.com',              extras: ['/logos/chatgpt.png'] },
   gemini:      { domain: 'gemini.google.com' },
   claude:      { domain: 'claude.ai' },
   grok:        { domain: 'x.ai' },
-  perplexity:  { domain: 'perplexity.ai' },
+  perplexity:  { domain: 'perplexity.ai',           extras: ['/logos/perplexity.png'] },
   copilot:     { domain: 'copilot.microsoft.com' },
   meta:        { domain: 'meta.ai' },
   llama:       { domain: 'llama.meta.com' },
@@ -47,7 +47,7 @@ const PRODUCT_DOMAINS: Record<string, { domain: string; extras?: string[] }> = {
 
   // ── AI Image & Video ──
   midjourney:  { domain: 'midjourney.com' },
-  dalle:       { domain: 'openai.com' },
+  dalle:       { domain: 'openai.com',              extras: ['/logos/chatgpt.png'] },
   sora:        { domain: 'sora.com' },
   runway:      { domain: 'runwayml.com' },
   pika:        { domain: 'pika.art' },
@@ -61,44 +61,44 @@ const PRODUCT_DOMAINS: Record<string, { domain: string; extras?: string[] }> = {
   veed:        { domain: 'veed.io' },
 
   // ── AI Audio ──
-  elevenlabs:  { domain: 'elevenlabs.io' },
+  elevenlabs:  { domain: 'elevenlabs.io',           extras: ['/logos/elevenlabs.png'] },
   suno:        { domain: 'suno.ai' },
   udio:        { domain: 'udio.com' },
   mubert:      { domain: 'mubert.com' },
-  wispr:       { domain: 'wisprflow.ai' },
+  wispr:       { domain: 'wisprflow.ai',            extras: ['/logos/wisprflow.png'] },
 
   // ── AI Coding ──
-  cursor:      { domain: 'cursor.com' },
+  cursor:      { domain: 'cursor.com',              extras: ['/logos/cursor.png'] },
   github:      { domain: 'github.com' },
-  replit:      { domain: 'replit.com' },
-  bolt:        { domain: 'bolt.new' },
+  replit:      { domain: 'replit.com',              extras: ['/logos/replit.png'] },
+  bolt:        { domain: 'bolt.new',                extras: ['/logos/bolt-new.png'] },
   lovable:     { domain: 'lovable.dev' },
   'v0':        { domain: 'v0.dev' },
   windsurf:    { domain: 'codeium.com' },
   warp:        { domain: 'warp.dev' },
   'magic patterns': { domain: 'magicpatterns.com' },
   framer:      { domain: 'framer.com' },
-  n8n:         { domain: 'n8n.io' },
+  n8n:         { domain: 'n8n.io',                  extras: ['/logos/n8n.png'] },
   factory:     { domain: 'factory.ai' },
-  manus:       { domain: 'manus.im' },
+  manus:       { domain: 'manus.im',                extras: ['/logos/manus.png'] },
 
   // ── Design & Creative ──
-  canva:       { domain: 'canva.com' },
+  canva:       { domain: 'canva.com',               extras: ['/logos/canva.png'] },
   figma:       { domain: 'figma.com' },
-  adobe:       { domain: 'adobe.com' },
-  capcut:      { domain: 'capcut.com' },
-  picsart:     { domain: 'picsart.com' },
-  gamma:       { domain: 'gamma.app' },
+  adobe:       { domain: 'adobe.com',               extras: ['/logos/adobe.png'] },
+  capcut:      { domain: 'capcut.com',              extras: ['/logos/capcut.png'] },
+  picsart:     { domain: 'picsart.com',             extras: ['/logos/picsart.svg'] },
+  gamma:       { domain: 'gamma.app',               extras: ['/logos/gamma.svg', '/logos/gamma.png'] },
 
   // ── Productivity & Office ──
-  notion:      { domain: 'notion.so' },
+  notion:      { domain: 'notion.so',               extras: ['/logos/notion.png'] },
   microsoft:   { domain: 'microsoft.com' },
   office:      { domain: 'microsoft.com' },
   obsidian:    { domain: 'obsidian.md' },
   granola:     { domain: 'granola.ai' },
   linear:      { domain: 'linear.app' },
   chatprd:     { domain: 'chatprd.ai' },
-  gumloop:     { domain: 'gumloop.com' },
+  gumloop:     { domain: 'gumloop.com',             extras: ['/logos/gumloop.png'] },
 
   // ── Research & Knowledge ──
   quillbot:    { domain: 'quillbot.com' },
@@ -115,12 +115,12 @@ const PRODUCT_DOMAINS: Record<string, { domain: string; extras?: string[] }> = {
   zoom:        { domain: 'zoom.us' },
 
   // ── Infrastructure & Dev Tools ──
-  supabase:    { domain: 'supabase.com' },
-  railway:     { domain: 'railway.app' },
-  posthog:     { domain: 'posthog.com' },
+  supabase:    { domain: 'supabase.com',            extras: ['/logos/supabase.png'] },
+  railway:     { domain: 'railway.app',             extras: ['/logos/railway.png'] },
+  posthog:     { domain: 'posthog.com',             extras: ['/logos/posthog.png'] },
 
   // ── Education ──
-  coursera:    { domain: 'coursera.org' },
+  coursera:    { domain: 'coursera.org',            extras: ['/logos/coursera.png'] },
   udemy:       { domain: 'udemy.com' },
 
   // ── Entertainment ──
@@ -131,48 +131,74 @@ const PRODUCT_DOMAINS: Record<string, { domain: string; extras?: string[] }> = {
   // ── Other ──
   dropbox:     { domain: 'dropbox.com' },
   amazon:      { domain: 'amazon.com' },
-  google:      { domain: 'google.com' },
+  google:      { domain: 'google.com',              extras: ['/logos/googleai.svg'] },
 
   // ── Custom / Service Hub products ──
-  antigravity:     { domain: 'antigravity.ai', extras: ['/logos/antigravity.png'] },
-  'nano banana':   { domain: 'nano.one' },
-  'omni ai':       { domain: 'omni.us' },
+  antigravity:      { domain: 'antigravity.google' },
+  'nano banana':    { domain: 'nano.one' },
+  'omni ai':        { domain: 'omni.us' },
   'neural express': { domain: 'neural.love' },
-  'ask youtube':   { domain: 'youtube.com' },
-  'google pics':   { domain: 'photos.google.com' },
-  'notebooklm':    { domain: 'notebooklm.google.com' },
-  'gemini flash':  { domain: 'gemini.google.com' },
-  'gemini spark':  { domain: 'gemini.google.com' },
-  'gemini ai':     { domain: 'gemini.google.com' },
-  'veo':           { domain: 'deepmind.google.com' },
-  'veo 3':         { domain: 'deepmind.google.com' },
-  'google one':    { domain: 'one.google.com' },
-  'google 5tb':    { domain: 'one.google.com' },
+  'ask youtube':    { domain: 'youtube.com' },
+  'google pics':    { domain: 'photos.google.com' },
+  'notebooklm':     { domain: 'notebooklm.google.com' },
+  'gemini flash':   { domain: 'gemini.google.com' },
+  'gemini spark':   { domain: 'gemini.google.com' },
+  'gemini ai':      { domain: 'gemini.google.com' },
+  'veo':            { domain: 'deepmind.google.com' },
+  'veo 3':          { domain: 'deepmind.google.com' },
+  'google one':     { domain: 'one.google.com' },
+  'google 5tb':     { domain: 'one.google.com' },
   'google storage': { domain: 'one.google.com' },
+
+  // ── Typo aliases & missing brands found in catalog ──
+  elevenlab:   { domain: 'elevenlabs.io',           extras: ['/logos/elevenlabs.png'] },
+  lovabe:      { domain: 'lovable.dev' },
+  outlook:     { domain: 'outlook.com' },
+  hotmail:     { domain: 'outlook.com' },
+  gmail:       { domain: 'mail.google.com' },
+  openart:     { domain: 'openart.ai' },
+  expressvpn:  { domain: 'expressvpn.com' },
+  'express vpn': { domain: 'expressvpn.com' },
+  fortnite:    { domain: 'fortnite.com' },
+  hma:         { domain: 'hidemyass.com' },
+  'hama vpn':  { domain: 'hidemyass.com' },
+  nitro:       { domain: 'discord.com' },
 };
+
+const SORTED_DOMAIN_KEYS = Object.keys(PRODUCT_DOMAINS).sort((a, b) => b.length - a.length);
 
 function resolveSources(productName: string, dbImage?: string | null): string[] {
   const lower = productName.toLowerCase().trim();
   const sources: string[] = [];
 
-  // Sort keys by length DESC so longer/more specific keys match first
-  const sortedKeys = Object.keys(PRODUCT_DOMAINS).sort((a, b) => b.length - a.length);
-  for (const key of sortedKeys) {
-    if (lower.includes(key)) {
-      const { domain, extras = [] } = PRODUCT_DOMAINS[key];
-      sources.push(...buildSources(domain, extras));
-      break; // take first match only (longest key wins)
+  // Find the brand key that appears earliest in the name (ties broken by longer key).
+  // Using "longest key wins regardless of position" misfires on compound names like
+  // "Gemini Pro + Antigravity" (would match "antigravity" instead of the leading "gemini").
+  let bestKey: string | null = null;
+  let bestIndex = Infinity;
+  let bestLength = 0;
+  for (const key of SORTED_DOMAIN_KEYS) {
+    const idx = lower.indexOf(key);
+    if (idx === -1) continue;
+    if (idx < bestIndex || (idx === bestIndex && key.length > bestLength)) {
+      bestKey = key;
+      bestIndex = idx;
+      bestLength = key.length;
     }
   }
 
-  // If no match, derive domain from product name itself
+  if (bestKey) {
+    const { domain, extras = [] } = PRODUCT_DOMAINS[bestKey];
+    sources.push(...buildSources(domain, extras));
+  }
+
+  // If no match, derive domain from product name itself.
+  // Routed through the server-side proxy (not hit directly) so ad-blockers /
+  // tracking-prevention extensions that block third-party logo CDNs don't break it.
   if (sources.length === 0) {
     const firstWord = lower.replace(/[^a-z0-9\s]/g, '').trim().split(/\s+/)[0];
     if (firstWord && firstWord.length > 2) {
-      sources.push(`https://logo.clearbit.com/${firstWord}.com`);
-      sources.push(`https://icon.horse/icon/${firstWord}.com`);
-      sources.push(`https://www.google.com/s2/favicons?domain=${firstWord}.com&sz=256`);
-      sources.push(`https://icon.horse/icon/${firstWord}.ai`);
+      sources.push(`/api/logo?domain=${firstWord}.com`);
     }
   }
 
@@ -197,7 +223,7 @@ interface ProductLogoProps {
   className?: string;
   /** 'transparent' = no background (like service-hub), 'white' = white bg box */
   bg?: 'transparent' | 'white' | 'none';
-  /** true = defer loading for below-the-fold logos (default: false = eager for first cards) */
+  /** true = defer loading for below-the-fold logos (default: true for performance) */
   lazy?: boolean;
 }
 
@@ -207,7 +233,7 @@ export default function ProductLogo({
   size = 48,
   className = '',
   bg = 'white',
-  lazy = false,
+  lazy = true,
 }: ProductLogoProps) {
   const sources = useMemo(() => resolveSources(productName, dbImage), [productName, dbImage]);
   const [step, setStep] = useState(0);

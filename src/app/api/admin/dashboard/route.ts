@@ -138,6 +138,7 @@ export async function GET(request: NextRequest) {
                 {} as Record<string, number>
             ),
         });
+
     } catch {
         return NextResponse.json({ error: 'Failed to fetch dashboard stats' }, { status: 500 });
     }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/auth';
+import { cacheInvalidate } from '@/lib/api-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         displayOrder:  Number(body.displayOrder) || 0,
       },
     });
+    cacheInvalidate('bundles-active');
     return NextResponse.json(bundle);
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
@@ -48,6 +50,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const { id } = await params;
     await prisma.bundle.delete({ where: { id } });
+    cacheInvalidate('bundles-active');
     return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

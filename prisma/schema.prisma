@@ -17,31 +17,31 @@ model Category {
 }
 
 model Product {
-  id                    String           @id @default(cuid())
-  name                  String
-  nameAr                String           @default("")
-  slug                  String           @unique
-  description           String           @default("")
-  descriptionAr         String           @default("")
-  features              String           @default("[]")
-  featuresAr            String           @default("[]")
-  basePrice             Float
-  discount              Float            @default(0)
-  isActive              Boolean          @default(true)
-  outOfStock            Boolean          @default(false)
-  isFeatured            Boolean          @default(false)
-  unavailableUntil      DateTime?
-  images                String           @default("[]")
-  durationLabel         String           @default("")
-  warrantyOptions       String           @default("[]")
-  fullWarranty          Boolean          @default(false)
-  categoryId            String
-  category              Category         @relation(fields: [categoryId], references: [id])
-  variants              ProductVariant[]
-  orderCount            Int              @default(0)
-  displayOrder          Int              @default(0)
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
+  id               String           @id @default(cuid())
+  name             String
+  nameAr           String           @default("")
+  slug             String           @unique
+  description      String           @default("")
+  descriptionAr    String           @default("")
+  features         String           @default("[]")
+  featuresAr       String           @default("[]")
+  basePrice        Float
+  discount         Float            @default(0)
+  isActive         Boolean          @default(true)
+  outOfStock       Boolean          @default(false)
+  isFeatured       Boolean          @default(false)
+  unavailableUntil DateTime?
+  images           String           @default("[]")
+  durationLabel    String           @default("")
+  warrantyOptions  String           @default("[]")
+  fullWarranty     Boolean          @default(false)
+  categoryId       String
+  category         Category         @relation(fields: [categoryId], references: [id])
+  variants         ProductVariant[]
+  orderCount       Int              @default(0)
+  displayOrder     Int              @default(0)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 }
 
 model ProductVariant {
@@ -74,21 +74,24 @@ model Order {
 }
 
 model Settings {
-  id             String @id @default(cuid())
-  storeName      String @default("Service Hub")
-  whatsappPhone  String @default("1234567890")
-  currency       String @default("EGP")
-  seoTitle       String @default("Service Hub - Digital Subscriptions")
-  seoDescription String @default("Premium digital subscriptions at the best prices")
-  theme          String @default("dark")
-  heroStat1Value String @default("500+")
-  heroStat1Label String @default("Happy Customers")
-  heroStat2Value String @default("6+")
-  heroStat2Label String @default("Premium Services")
-  heroStat3Value String @default("24h")
-  heroStat3Label String @default("Fast Delivery")
-  contentEn      String @default("{}")
-  contentAr      String @default("{}")
+  id             String    @id @default(cuid())
+  storeName      String    @default("Service Hub")
+  whatsappPhone  String    @default("1234567890")
+  currency       String    @default("EGP")
+  seoTitle       String    @default("Service Hub - Digital Subscriptions")
+  seoDescription String    @default("Premium digital subscriptions at the best prices")
+  theme          String    @default("dark")
+  heroStat1Value String    @default("500+")
+  heroStat1Label String    @default("Happy Customers")
+  heroStat2Value String    @default("6+")
+  heroStat2Label String    @default("Premium Services")
+  heroStat3Value String    @default("24h")
+  heroStat3Label String    @default("Fast Delivery")
+  contentEn      String    @default("{}")
+  contentAr      String    @default("{}")
+  usdToEgpRate   Float     @default(50.0)
+  egpMarkup      Float     @default(0)
+  rateUpdatedAt  DateTime?
 }
 
 model Admin {
@@ -115,25 +118,24 @@ model Coupon {
 }
 
 model Bundle {
-  id           String   @id @default(cuid())
-  title        String
-  titleAr      String   @default("")
-  subtitle     String   @default("")
-  subtitleAr   String   @default("")
-  description  String   @default("")
-  descriptionAr String  @default("")
-  gradient     String   @default("linear-gradient(135deg, #7c3aed, #a855f7)")
-  savings      String   @default("Save 30%")
-  savingsAr    String   @default("وفّر 30%")
-  price        Float    @default(0)
-  originalPrice Float   @default(0)
-  tools        String   @default("[]")
-  features     String   @default("[]")
-  featuresAr   String   @default("[]")
-  isHot        Boolean  @default(false)
-  isActive     Boolean  @default(true)
-  displayOrder Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(cuid())
+  title         String
+  titleAr       String   @default("")
+  subtitle      String   @default("")
+  subtitleAr    String   @default("")
+  description   String   @default("")
+  descriptionAr String   @default("")
+  gradient      String   @default("linear-gradient(135deg, #7c3aed, #a855f7)")
+  savings       String   @default("Save 30%")
+  savingsAr     String   @default("وفّر 30%")
+  price         Float    @default(0)
+  originalPrice Float    @default(0)
+  tools         String   @default("[]")
+  features      String   @default("[]")
+  featuresAr    String   @default("[]")
+  isHot         Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  displayOrder  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
-

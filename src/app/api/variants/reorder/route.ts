@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/auth';
+import { cacheInvalidate } from '@/lib/api-cache';
 
 export async function PUT(request: NextRequest) {
     try {
@@ -26,6 +27,7 @@ export async function PUT(request: NextRequest) {
 
         await Promise.all(updates);
 
+        cacheInvalidate('products-active');
         return NextResponse.json({ success: true });
     } catch {
         return NextResponse.json({ error: 'Failed to reorder variants' }, { status: 500 });
