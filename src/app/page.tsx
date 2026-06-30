@@ -104,6 +104,8 @@ export default function HomePage() {
           products={products}
           isAr={isAr}
           currencySymbol={currencySymbol}
+          displaySymbol={displaySymbol}
+          convertForDisplay={convertForDisplay}
           whatsappPhone={whatsappPhone || ''}
           onClose={closeModal}
         />
