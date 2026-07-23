@@ -27,6 +27,8 @@ export interface CapiEventInput {
   eventSourceUrl: string;
   customData?: Record<string, unknown>;
   userData?: CapiUserData;
+  /** Meta's "Test Events" tool only shows CAPI events tagged with this code. Testing only. */
+  testEventCode?: string;
 }
 
 /** Send one event to Meta's Conversions API. No-ops silently if not configured. */
@@ -56,6 +58,7 @@ export async function sendCapiEvent(pixelId: string, input: CapiEventInput): Pro
       user_data,
       custom_data: input.customData || {},
     }],
+    ...(input.testEventCode ? { test_event_code: input.testEventCode } : {}),
   };
 
   try {

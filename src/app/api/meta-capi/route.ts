@@ -50,12 +50,16 @@ export async function POST(request: NextRequest) {
       (body.customData && typeof body.customData === 'object') ? body.customData : {};
     const rawUserData: Record<string, unknown> =
       (body.userData && typeof body.userData === 'object') ? body.userData : {};
+    const testEventCode = typeof body.testEventCode === 'string' && /^[A-Za-z0-9]{1,32}$/.test(body.testEventCode)
+      ? body.testEventCode
+      : undefined;
 
     await sendCapiEvent(pixelId, {
       eventName,
       eventId,
       eventSourceUrl: url,
       customData,
+      testEventCode,
       userData: {
         email:     typeof rawUserData.email     === 'string' ? rawUserData.email     : undefined,
         phone:     typeof rawUserData.phone     === 'string' ? rawUserData.phone     : undefined,

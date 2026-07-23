@@ -31,6 +31,9 @@ function fbEvent(name: string, params: Record<string, unknown> | undefined, even
 /** Mirror the same event to Meta's Conversions API (server-side), for deduplication + better match quality. */
 function sendCapi(eventName: string, eventId: string, customData?: Record<string, unknown>, userData?: PixelUserData) {
   if (typeof window === 'undefined') return;
+  // Temporary testing hook: visit the site with ?fbtest=TEST_CODE to make CAPI
+  // events show up in Meta's "Test Events" tool. Absent for normal visitors.
+  const testEventCode = new URLSearchParams(window.location.search).get('fbtest') || undefined;
   fetch('/api/meta-capi', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -38,6 +41,7 @@ function sendCapi(eventName: string, eventId: string, customData?: Record<string
       eventName,
       eventId,
       url: window.location.href,
+      testEventCode,
       customData: customData || {},
       userData: userData || {},
     }),
