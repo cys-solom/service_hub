@@ -116,7 +116,11 @@ export default function AdminOrdersPage() {
     const handleStatusChange = async (orderId: string, newStatus: string) => {
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
         try {
-            const res = await adminJsonFetch(`/api/orders/${orderId}`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) });
+            // Temporary testing hook: visit this page with ?fbtest=TEST_CODE to make the
+            // Purchase event (fired when a status changes to Completed) show up in Meta's
+            // Test Events tool. Absent during normal admin use.
+            const testEventCode = new URLSearchParams(window.location.search).get('fbtest') || undefined;
+            const res = await adminJsonFetch(`/api/orders/${orderId}`, { method: 'PUT', body: JSON.stringify({ status: newStatus, testEventCode }) });
             if (!res.ok) throw new Error('Failed');
             showToast('success', `Status → ${newStatus}`);
         } catch {

@@ -61,10 +61,14 @@ export async function PUT(
                 if (pixelId) {
                     const nameParts = existing.customerName.trim().split(/\s+/);
                     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.services-hub.store';
+                    const testEventCode = typeof body.testEventCode === 'string' && /^[A-Za-z0-9]{1,32}$/.test(body.testEventCode)
+                        ? body.testEventCode
+                        : undefined;
                     await sendCapiEvent(pixelId, {
                         eventName: 'Purchase',
                         eventId: `purchase-${existing.id}`,
                         eventSourceUrl: `${siteUrl.replace(/\/$/, '')}/order/${existing.orderCode}`,
+                        testEventCode,
                         customData: {
                             value: existing.totalPrice,
                             currency,
