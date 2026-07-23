@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import {
     Plus, Edit, Trash2, Package, X, Save,
     Eye, EyeOff, Clock, Search, AlertTriangle,
-    Ban, Star, Link,
+    Ban, Star, Link, Copy,
     Image as ImageIcon, ChevronUp, ChevronDown, GripVertical,
 } from 'lucide-react';
 import { useSettings } from '@/lib/settings-context';
@@ -323,6 +323,38 @@ export default function AdminProductsPage() {
         setShowUnavailableModal(null);
         setUnavailableDate('');
         fetchData();
+    };
+
+    const handleDuplicate = async (product: ProductData) => {
+        const body = {
+            name:            `${product.name} (Copy)`,
+            nameAr:          product.nameAr ? `${product.nameAr} (نسخة)` : '',
+            slug:            `${product.slug}-copy-${Date.now()}`,
+            description:     product.description,
+            descriptionAr:   product.descriptionAr,
+            features:        product.features,
+            featuresAr:      product.featuresAr,
+            basePrice:       product.basePrice,
+            discount:        product.discount,
+            images:          product.images,
+            categoryId:      product.categoryId,
+            isActive:        false,
+            fullWarranty:    product.fullWarranty,
+            displayOrder:    (product.displayOrder || 0) + 1,
+            durationLabel:   product.durationLabel,
+            accountType:     product.accountType,
+            warrantyType:    product.warrantyType,
+            warrantyDuration: product.warrantyDuration,
+            warrantyOptions: product.warrantyOptions,
+        };
+        try {
+            const res = await adminJsonFetch('/api/products', { method: 'POST', body: JSON.stringify(body) });
+            if (!res.ok) throw new Error();
+            showToast('success', `Duplicated "${product.name}" — inactive by default`);
+            fetchData();
+        } catch {
+            showToast('error', 'Failed to duplicate product');
+        }
     };
 
     const handleClearUnavailable = async (productId: string) => {
@@ -1225,6 +1257,13 @@ export default function AdminProductsPage() {
                                         ) : (
                                             <EyeOff className={`w-4 h-4 text-gray-400 ${loadingAction === `active-${product.id}` ? 'animate-pulse' : ''}`} />
                                         )}
+                                    </button>
+                                    <button
+                                        onClick={() => handleDuplicate(product)}
+                                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                                        title="Duplicate product"
+                                    >
+                                        <Copy className="w-4 h-4 text-violet-400" />
                                     </button>
                                     <button
                                         onClick={() => handleEdit(product)}

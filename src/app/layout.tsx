@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { CartProvider } from '@/lib/cart-context';
+import { WishlistProvider } from '@/lib/wishlist-context';
 import { I18nProvider } from '@/lib/i18n';
 import { SettingsProvider } from '@/lib/settings-context';
 import Navbar from '@/components/Navbar';
@@ -10,6 +11,8 @@ import { LayoutWrapper } from '@/components/LayoutWrapper';
 import PageTransition from '@/components/PageTransition';
 import ScrollToTop from '@/components/ScrollToTop';
 import CartDrawer from '@/components/CartDrawer';
+import PromoBanner from '@/components/PromoBanner';
+import MetaPixel from '@/components/MetaPixel';
 
 export const metadata: Metadata = {
   title: 'Service Hub - Premium Digital Subscriptions',
@@ -42,22 +45,26 @@ export default function RootLayout({
           <I18nProvider>
             <SettingsProvider>
               <CartProvider>
-                <LayoutWrapper>
-                  <div className="animated-bg" aria-hidden="true">
-                    <div className="animated-bg-orb animated-bg-orb--1" />
-                    <div className="animated-bg-orb animated-bg-orb--2" />
-                    <div className="animated-bg-orb animated-bg-orb--3" />
-                  </div>
-                  <Navbar />
-                  <main className="relative z-10 min-h-screen pt-16">
-                    <PageTransition>{children}</PageTransition>
-                  </main>
-                  <div className="relative z-10">
-                    <Footer />
-                  </div>
-                  <ScrollToTop />
-                  <CartDrawer />
-                </LayoutWrapper>
+                <WishlistProvider>
+                  <LayoutWrapper>
+                    <MetaPixel />
+                    <PromoBanner />
+                    <div className="animated-bg" aria-hidden="true">
+                      <div className="animated-bg-orb animated-bg-orb--1" />
+                      <div className="animated-bg-orb animated-bg-orb--2" />
+                      <div className="animated-bg-orb animated-bg-orb--3" />
+                    </div>
+                    <Navbar />
+                    <main className="relative z-10 min-h-screen pt-16">
+                      <PageTransition>{children}</PageTransition>
+                    </main>
+                    <div className="relative z-10">
+                      <Footer />
+                    </div>
+                    <ScrollToTop />
+                    <CartDrawer />
+                  </LayoutWrapper>
+                </WishlistProvider>
               </CartProvider>
             </SettingsProvider>
           </I18nProvider>

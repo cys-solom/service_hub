@@ -20,6 +20,8 @@ export interface Settings {
     usdToEgpRate: number;
     egpMarkup: number;
     rateUpdatedAt: string | null;
+    // Marketing
+    metaPixelId: string;
 }
 
 const currencySymbols: Record<string, string> = {
@@ -52,6 +54,7 @@ const defaultSettings: Settings = {
     usdToEgpRate: 50.5,
     egpMarkup: 0,
     rateUpdatedAt: null,
+    metaPixelId: '',
 };
 
 interface SettingsContextValue extends Settings {
@@ -84,6 +87,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             .then((data) => {
                 if (data && !data.error) {
                     const currency = data.currency || 'EGP';
+                    let metaPixelId = '';
+                    try { metaPixelId = JSON.parse(data.contentEn || '{}').metaPixelId || ''; } catch { /* ignore */ }
                     const resolved: Settings = {
                         ...defaultSettings,
                         ...data,
@@ -92,6 +97,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
                         usdToEgpRate: data.usdToEgpRate ?? 50.5,
                         egpMarkup:    data.egpMarkup    ?? 0,
                         rateUpdatedAt: data.rateUpdatedAt ?? null,
+                        metaPixelId,
                     };
                     settingsCache = resolved;
                     setSettings(resolved);

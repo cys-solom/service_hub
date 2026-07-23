@@ -42,12 +42,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       openGraph: {
         title: `${name} | Service Hub`, description: shortDesc,
         url: `${baseUrl}/product/${slug}`, type: 'website',
-        images: imageUrl ? [{ url: imageUrl, width: 800, height: 600, alt: name }] : [],
+        images: [{ url: `${baseUrl}/product/${slug}/opengraph-image`, width: 1200, height: 630, alt: name }],
       },
       twitter: {
-        card: imageUrl ? 'summary_large_image' : 'summary',
+        card: 'summary_large_image',
         title: `${name} | Service Hub`, description: shortDesc,
-        images: imageUrl ? [imageUrl] : [],
+        images: [`${baseUrl}/product/${slug}/opengraph-image`],
       },
     };
   } catch {
@@ -167,12 +167,20 @@ export default async function ProductPage({ params }: Props) {
     } : undefined,
   };
 
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home',     item: baseUrl },
+      { '@type': 'ListItem', position: 2, name: 'Products', item: `${baseUrl}/products` },
+      { '@type': 'ListItem', position: 3, name: raw.name,   item: `${baseUrl}/product/${slug}` },
+    ],
+  };
+
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <ProductPageClient product={product} relatedProducts={relatedProducts} />
     </>
   );

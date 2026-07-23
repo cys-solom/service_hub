@@ -3,7 +3,8 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Check, Eye, ShoppingCart, Shield, Star, Search, X } from 'lucide-react';
+import { Check, Eye, ShoppingCart, Shield, Star, Search, X, SlidersHorizontal, ChevronDown, Heart } from 'lucide-react';
+import { useWishlist } from '@/lib/wishlist-context';
 import { useTheme } from 'next-themes';
 import ProductLogo from '@/components/ProductLogo';
 import { useCart } from '@/lib/cart-context';
@@ -73,6 +74,8 @@ function ProductCard({ product, isAr, onAddToCartVariant, isAdded, cardIndex = 0
   isAdded: boolean; cardIndex?: number;
 }) {
   const { displaySymbol, convertForDisplay } = useSettings();
+  const { toggle: wishToggle, isWished } = useWishlist();
+  const wished = isWished(product.id);
   const currencySymbol = displaySymbol;
   const productName    = isAr && product.nameAr ? product.nameAr : product.name.trim();
   const accentColor    = getProductAccentColor(product.name);
@@ -113,6 +116,13 @@ function ProductCard({ product, isAr, onAddToCartVariant, isAdded, cardIndex = 0
           <div style={{ flex: 1, minWidth: 0 }}>
             <h2 className="sh-card-name">{productName}</h2>
           </div>
+          <button
+            onClick={() => wishToggle({ id: product.id, name: product.name, nameAr: product.nameAr, slug: product.slug, image: product.images?.[0], price: getLowestPrice(product), accentColor })}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', flexShrink: 0, alignSelf: 'flex-start' }}
+            title={wished ? (isAr ? 'إزالة من المفضلة' : 'Remove from wishlist') : (isAr ? 'إضافة للمفضلة' : 'Add to wishlist')}
+          >
+            <Heart style={{ width: 15, height: 15, color: wished ? '#f87171' : 'rgba(128,128,128,0.4)', fill: wished ? '#f87171' : 'none', transition: 'all 0.2s' }} />
+          </button>
           {product.isFeatured && <Star style={{ width: 14, height: 14, color: '#fbbf24', fill: '#fbbf24', flexShrink: 0, alignSelf: 'flex-start' }} />}
         </div>
 
@@ -185,6 +195,11 @@ function ProductCard({ product, isAr, onAddToCartVariant, isAdded, cardIndex = 0
             <div className="sh-badges">
               {warrantyLabel && <span className="sh-badge sh-badge--green"><Shield style={{ width: 10, height: 10 }} />{warrantyLabel}</span>}
               {product.outOfStock && <span className="sh-badge sh-badge--red">{isAr ? 'غير متوفر' : 'Out of stock'}</span>}
+              {!product.outOfStock && (product.orderCount || 0) >= 5 && (
+                <span className="sh-badge" style={{ background: `${accentColor}15`, color: accentColor, border: `1px solid ${accentColor}30` }}>
+                  🔥 {product.orderCount}+
+                </span>
+              )}
             </div>
           </div>
           <div className="sh-actions">
@@ -210,6 +225,8 @@ function ProductCard({ product, isAr, onAddToCartVariant, isAdded, cardIndex = 0
   );
 }
 
+type SortKey = 'default' | 'price_asc' | 'price_desc' | 'popular';
+
 export default function ProductsPageClient({ products }: { products: Product[] }) {
   const searchParams = useSearchParams();
   const urlCategorySlug = searchParams.get('category') || '';
@@ -217,23 +234,42 @@ export default function ProductsPageClient({ products }: { products: Product[] }
   const [addedId,          setAddedId]          = useState<string | null>(null);
   const [search,           setSearch]           = useState('');
   const [activeCategory,   setActiveCategory]   = useState('all');
+  const [sortBy,           setSortBy]           = useState<SortKey>('default');
+  const [showFilters,      setShowFilters]      = useState(false);
+  const [priceMin,         setPriceMin]         = useState(0);
+  const [priceMax,         setPriceMax]         = useState(Infinity);
   const { addItem }  = useCart();
   const { locale, t } = useI18n();
+  const { displaySymbol, convertForDisplay } = useSettings();
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   const C = mounted && resolvedTheme === 'light' ? LIGHT_C : DARK_C;
-  const isAr          = locale === 'ar';
+  const isAr = locale === 'ar';
 
   /* ── Set initial category from URL slug ── */
   useEffect(() => {
     if (!urlCategorySlug || !products.length) return;
     const match = products.find(p => p.category?.slug === urlCategorySlug);
-    if (match?.categoryId) {
-      setActiveCategory(match.categoryId);
-    }
+    if (match?.categoryId) setActiveCategory(match.categoryId);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlCategorySlug, products.length]);
+
+  /* ── Global price bounds (converted) ── */
+  const { globalMin, globalMax } = useMemo(() => {
+    const prices = products.flatMap(p =>
+      (p.variants || []).filter(v => v.isActive && v.price > 0).map(v => convertForDisplay(v.price))
+    ).filter(Boolean);
+    return prices.length
+      ? { globalMin: Math.floor(Math.min(...prices)), globalMax: Math.ceil(Math.max(...prices)) }
+      : { globalMin: 0, globalMax: 10000 };
+  }, [products, convertForDisplay]);
+
+  /* ── Init price range once bounds are known ── */
+  useEffect(() => {
+    setPriceMin(globalMin);
+    setPriceMax(globalMax);
+  }, [globalMin, globalMax]);
 
   /* ── Categories list ── */
   const categories = useMemo(() => {
@@ -244,7 +280,10 @@ export default function ProductsPageClient({ products }: { products: Product[] }
     return Array.from(map.entries());
   }, [products]);
 
-  /* ── Filter ── */
+  const isPriceFiltered = priceMin > globalMin || priceMax < globalMax;
+  const isFiltered = search.trim() || activeCategory !== 'all' || isPriceFiltered || sortBy !== 'default';
+
+  /* ── Filter + Sort ── */
   const filtered = useMemo(() => {
     let list = [...products];
 
@@ -259,12 +298,23 @@ export default function ProductsPageClient({ products }: { products: Product[] }
       );
     }
 
+    if (isPriceFiltered) {
+      list = list.filter(p => {
+        const lowest = convertForDisplay(getLowestPrice(p));
+        return lowest >= priceMin && lowest <= priceMax;
+      });
+    }
+
     return list.sort((a, b) => {
+      if (sortBy === 'price_asc')  return getLowestPrice(a) - getLowestPrice(b);
+      if (sortBy === 'price_desc') return getLowestPrice(b) - getLowestPrice(a);
+      if (sortBy === 'popular')    return (b.orderCount || 0) - (a.orderCount || 0);
       const pa = getProductPriority(a.name), pb = getProductPriority(b.name);
       if (pa !== pb) return pa - pb;
       return (a.displayOrder || 0) - (b.displayOrder || 0);
     });
-  }, [products, search, activeCategory]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products, search, activeCategory, sortBy, priceMin, priceMax, isPriceFiltered]);
 
   /* ── Group by category ── */
   const groups = useMemo(() => {
@@ -304,39 +354,130 @@ export default function ProductsPageClient({ products }: { products: Product[] }
           </p>
         </div>
 
-        {/* ── Search + Category Filter ── */}
+        {/* ── Search + Filters ── */}
         <div className="fade-up" style={{ marginBottom: '1.75rem', display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
 
-          {/* Search input */}
-          <div style={{ position: 'relative', maxWidth: 420 }}>
-            <Search style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: C.textMuted, pointerEvents: 'none' }} />
-            <input
-              type="search"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder={isAr ? 'ابحث عن منتج...' : 'Search products...'}
+          {/* Row 1: Search + Sort + Filter toggle */}
+          <div style={{ display: 'flex', gap: '0.625rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Search */}
+            <div style={{ position: 'relative', flex: '1 1 220px', maxWidth: 380 }}>
+              <Search style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', width: 15, height: 15, color: C.textMuted, pointerEvents: 'none' }} />
+              <input
+                type="search"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder={isAr ? 'ابحث عن منتج...' : 'Search products...'}
+                style={{
+                  width: '100%', padding: '0.6rem 0.875rem 0.6rem 2.4rem',
+                  background: C.surface, border: `1px solid ${C.border}`,
+                  borderRadius: 10, color: C.text, fontSize: '0.875rem',
+                  outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.15s',
+                }}
+                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)')}
+                onBlur={e => (e.currentTarget.style.borderColor = C.border)}
+              />
+              {search && (
+                <button onClick={() => setSearch('')} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: 2, display: 'flex' }}>
+                  <X style={{ width: 13, height: 13 }} />
+                </button>
+              )}
+            </div>
+
+            {/* Sort dropdown */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value as SortKey)}
+                style={{
+                  appearance: 'none', padding: '0.6rem 2rem 0.6rem 0.875rem',
+                  background: C.surface, border: `1px solid ${sortBy !== 'default' ? 'rgba(139,92,246,0.5)' : C.border}`,
+                  borderRadius: 10, color: sortBy !== 'default' ? C.accent : C.textSec,
+                  fontSize: '0.8rem', fontWeight: 500, cursor: 'pointer',
+                  fontFamily: 'inherit', outline: 'none',
+                }}
+              >
+                <option value="default">{isAr ? 'الترتيب الافتراضي' : 'Default'}</option>
+                <option value="price_asc">{isAr ? 'السعر: الأقل أولاً' : 'Price: Low → High'}</option>
+                <option value="price_desc">{isAr ? 'السعر: الأعلى أولاً' : 'Price: High → Low'}</option>
+                <option value="popular">{isAr ? 'الأكثر مبيعاً' : 'Most Popular'}</option>
+              </select>
+              <ChevronDown style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', width: 13, height: 13, color: C.textMuted, pointerEvents: 'none' }} />
+            </div>
+
+            {/* Filter toggle */}
+            <button
+              onClick={() => setShowFilters(f => !f)}
               style={{
-                width: '100%', padding: '0.65rem 0.875rem 0.65rem 2.5rem',
-                background: C.surface, border: `1px solid ${C.border}`,
-                borderRadius: 12, color: C.text, fontSize: '0.875rem',
-                outline: 'none', fontFamily: 'inherit',
-                transition: 'border-color 0.15s',
+                display: 'flex', alignItems: 'center', gap: '0.375rem',
+                padding: '0.6rem 0.875rem', borderRadius: 10, cursor: 'pointer',
+                background: showFilters || isPriceFiltered ? 'rgba(139,92,246,0.15)' : C.surface,
+                border: `1px solid ${showFilters || isPriceFiltered ? 'rgba(139,92,246,0.5)' : C.border}`,
+                color: showFilters || isPriceFiltered ? C.accent : C.textSec,
+                fontSize: '0.8rem', fontWeight: 500, fontFamily: 'inherit', flexShrink: 0,
               }}
-              onFocus={e => (e.currentTarget.style.borderColor = 'rgba(139,92,246,0.5)')}
-              onBlur={e => (e.currentTarget.style.borderColor = C.border)}
-            />
-            {search && (
-              <button onClick={() => setSearch('')} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: 2, display: 'flex' }}>
-                <X style={{ width: 14, height: 14 }} />
+            >
+              <SlidersHorizontal style={{ width: 13, height: 13 }} />
+              {isAr ? 'فلتر السعر' : 'Price Filter'}
+              {isPriceFiltered && <span style={{ background: C.accent, color: '#fff', borderRadius: 99, width: 6, height: 6, display: 'inline-block' }} />}
+            </button>
+
+            {/* Clear all */}
+            {isFiltered && (
+              <button
+                onClick={() => { setSearch(''); setActiveCategory('all'); setSortBy('default'); setPriceMin(globalMin); setPriceMax(globalMax); setShowFilters(false); }}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.6rem 0.75rem', borderRadius: 10, cursor: 'pointer', background: 'transparent', border: `1px solid ${C.border}`, color: C.textMuted, fontSize: '0.78rem', fontFamily: 'inherit', flexShrink: 0 }}
+              >
+                <X style={{ width: 12, height: 12 }} />
+                {isAr ? 'مسح' : 'Clear'}
               </button>
             )}
           </div>
+
+          {/* Price range panel */}
+          {showFilters && (
+            <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', maxWidth: 420 }}>
+              <p style={{ fontSize: '0.78rem', fontWeight: 600, color: C.textSec, margin: 0 }}>
+                {isAr ? 'نطاق السعر' : 'Price range'} ({displaySymbol})
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                <input
+                  type="number"
+                  min={globalMin}
+                  max={priceMax - 1}
+                  value={priceMin}
+                  onChange={e => setPriceMin(Math.max(globalMin, Math.min(Number(e.target.value), priceMax - 1)))}
+                  style={{ width: '100%', padding: '0.45rem 0.625rem', borderRadius: 8, background: 'transparent', border: `1px solid ${C.border}`, color: C.text, fontSize: '0.82rem', fontFamily: 'inherit', outline: 'none' }}
+                />
+                <span style={{ color: C.textMuted, fontSize: '0.78rem', flexShrink: 0 }}>—</span>
+                <input
+                  type="number"
+                  min={priceMin + 1}
+                  max={globalMax}
+                  value={priceMax === Infinity ? globalMax : priceMax}
+                  onChange={e => setPriceMax(Math.min(globalMax, Math.max(Number(e.target.value), priceMin + 1)))}
+                  style={{ width: '100%', padding: '0.45rem 0.625rem', borderRadius: 8, background: 'transparent', border: `1px solid ${C.border}`, color: C.text, fontSize: '0.82rem', fontFamily: 'inherit', outline: 'none' }}
+                />
+              </div>
+              {/* Visual range bar */}
+              <div style={{ position: 'relative', height: 4, background: C.border, borderRadius: 99 }}>
+                <div style={{
+                  position: 'absolute', height: '100%', borderRadius: 99, background: C.accent,
+                  left: `${((priceMin - globalMin) / (globalMax - globalMin)) * 100}%`,
+                  right: `${100 - ((Math.min(priceMax === Infinity ? globalMax : priceMax, globalMax) - globalMin) / (globalMax - globalMin)) * 100}%`,
+                }} />
+              </div>
+              <p style={{ fontSize: '0.72rem', color: C.textMuted, margin: 0 }}>
+                {filtered.length} {isAr ? 'منتج في هذا النطاق' : 'products in this range'}
+              </p>
+            </div>
+          )}
 
           {/* Category tabs */}
           {categories.length > 1 && (
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               {[['all', isAr ? 'الكل' : 'All'], ...categories].map(([id, name]) => {
                 const active = activeCategory === id;
+                const count = id === 'all' ? products.length : products.filter(p => p.categoryId === id).length;
                 return (
                   <button
                     key={id}
@@ -346,12 +487,11 @@ export default function ProductsPageClient({ products }: { products: Product[] }
                       border: `1px solid ${active ? (mounted && resolvedTheme === 'light' ? 'rgba(91,33,182,0.50)' : 'rgba(139,92,246,0.6)') : C.border}`,
                       background: active ? (mounted && resolvedTheme === 'light' ? 'rgba(91,33,182,0.12)' : 'rgba(139,92,246,0.15)') : 'transparent',
                       color: active ? (mounted && resolvedTheme === 'light' ? '#4c1d95' : '#a78bfa') : C.textSec,
-                      cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
-                      whiteSpace: 'nowrap',
+                      cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap',
                     }}
                   >
                     {name}
-                    {id === 'all' && <span style={{ marginLeft: 5, opacity: 0.6, fontSize: '0.72rem' }}>{products.length}</span>}
+                    <span style={{ marginInlineStart: 5, opacity: 0.6, fontSize: '0.72rem' }}>{count}</span>
                   </button>
                 );
               })}
@@ -369,8 +509,8 @@ export default function ProductsPageClient({ products }: { products: Product[] }
             <p style={{ fontSize: '0.82rem' }}>
               {isAr ? 'جرّب كلمة بحث مختلفة' : 'Try a different search term'}
             </p>
-            {(search || activeCategory !== 'all') && (
-              <button onClick={() => { setSearch(''); setActiveCategory('all'); }} style={{ marginTop: '1rem', padding: '0.5rem 1.25rem', borderRadius: 99, background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', color: '#a78bfa', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, fontFamily: 'inherit' }}>
+            {isFiltered && (
+              <button onClick={() => { setSearch(''); setActiveCategory('all'); setSortBy('default'); setPriceMin(globalMin); setPriceMax(globalMax); }} style={{ marginTop: '1rem', padding: '0.5rem 1.25rem', borderRadius: 99, background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', color: '#a78bfa', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, fontFamily: 'inherit' }}>
                 {isAr ? 'مسح الفلتر' : 'Clear filter'}
               </button>
             )}

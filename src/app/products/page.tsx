@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 import { Product, WarrantyOption } from '@/lib/types';
 import ProductsPageClient from './ProductsPageClient';
@@ -9,6 +10,25 @@ function parseJson<T>(raw: string, fallback: T): T {
 }
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata(
+  { searchParams }: { searchParams: Promise<{ category?: string }> }
+): Promise<Metadata> {
+  const { category: catSlug } = await searchParams;
+  if (!catSlug) {
+    return {
+      title: 'All Products | Service Hub',
+      description: 'Browse all premium digital subscriptions — ChatGPT, Gemini, Canva, Spotify and more at the best prices.',
+    };
+  }
+  const cat = await prisma.category.findUnique({ where: { slug: catSlug }, select: { name: true } });
+  if (!cat) return { title: 'Products | Service Hub' };
+  return {
+    title: `${cat.name} | Service Hub`,
+    description: `Browse all ${cat.name} digital subscriptions at the best prices. Fast delivery via WhatsApp.`,
+    openGraph: { title: `${cat.name} | Service Hub` },
+  };
+}
 
 export default async function ProductsPage() {
   const rawProducts = await prisma.product.findMany({

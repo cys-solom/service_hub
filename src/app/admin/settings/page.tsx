@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Save, Check, Globe, Store, AlertCircle } from 'lucide-react';
+import { Save, Check, Globe, Store, AlertCircle, Megaphone } from 'lucide-react';
 import { adminJsonFetch } from '@/lib/admin-fetch';
 
 interface SettingsData {
@@ -18,6 +18,8 @@ interface SettingsData {
     heroStat2Label?: string;
     heroStat3Value?: string;
     heroStat3Label?: string;
+    metaPixelId?: string;
+    contentEn?: string;
 }
 
 export default function AdminSettingsPage() {
@@ -32,7 +34,14 @@ export default function AdminSettingsPage() {
     useEffect(() => {
         fetch('/api/settings')
             .then((r) => r.json())
-            .then((data) => { if (data && !data.error) setSettings(data); setLoading(false); })
+            .then((data) => {
+                if (data && !data.error) {
+                    let metaPixelId = '';
+                    try { metaPixelId = JSON.parse(data.contentEn || '{}').metaPixelId || ''; } catch { /* ignore */ }
+                    setSettings({ ...data, metaPixelId });
+                }
+                setLoading(false);
+            })
             .catch(() => setLoading(false));
     }, []);
 
@@ -45,9 +54,13 @@ export default function AdminSettingsPage() {
         e.preventDefault();
         setSaving(true);
         try {
+            let existingContent: Record<string, unknown> = {};
+            try { existingContent = JSON.parse(settings.contentEn || '{}'); } catch { /* ignore */ }
+            const contentEn = JSON.stringify({ ...existingContent, metaPixelId: settings.metaPixelId || '' });
+            const { metaPixelId: _omit, ...rest } = settings;
             const res = await adminJsonFetch('/api/settings', {
                 method: 'PUT',
-                body: JSON.stringify(settings),
+                body: JSON.stringify({ ...rest, contentEn }),
             });
             if (!res.ok) throw new Error('Failed to save');
             showToast('success', 'Settings saved successfully');
@@ -177,6 +190,26 @@ export default function AdminSettingsPage() {
                             <label style={labelStyle}>SEO Description</label>
                             <textarea value={settings.seoDescription} onChange={(e) => setSettings({ ...settings, seoDescription: e.target.value })} rows={3} placeholder="Description for search engines" style={{ ...inputStyle, resize: 'none' }} />
                         </div>
+                    </div>
+                </div>
+
+                {/* Marketing */}
+                <div className="adm-card" style={{ padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                        <Megaphone style={{ width: 20, height: 20, color: '#a78bfa' }} />
+                        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#E8E8E8', margin: 0 }}>Marketing & Analytics</h3>
+                    </div>
+                    <div>
+                        <label style={labelStyle}>Meta Pixel ID</label>
+                        <input
+                            value={settings.metaPixelId || ''}
+                            onChange={(e) => setSettings({ ...settings, metaPixelId: e.target.value })}
+                            placeholder="e.g. 1234567890123456"
+                            style={inputStyle}
+                        />
+                        <p style={{ fontSize: '0.72rem', color: '#686868', marginTop: '0.3rem' }}>
+                            Tracks ViewContent, AddToCart, InitiateCheckout, and Lead (order placed) events
+                        </p>
                     </div>
                 </div>
 

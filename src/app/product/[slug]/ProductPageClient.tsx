@@ -6,14 +6,19 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Check, ShoppingCart, MessageCircle,
-  Plus, Minus, Ban, Tag, X, Shield, Star, ExternalLink,
+  Plus, Minus, Ban, Tag, X, Shield, Star, ExternalLink, Heart, Share2, Copy,
 } from 'lucide-react';
+import { useWishlist } from '@/lib/wishlist-context';
+import { trackProductView } from '@/lib/recently-viewed';
+import { pixel } from '@/lib/pixel';
+import { getProductAccentColor as _getAccent } from '@/lib/product-features';
 import { useCart } from '@/lib/cart-context';
 import { Product, ProductVariant, WarrantyOption } from '@/lib/types';
 import { buildWhatsAppMessage, generateWhatsAppUrl, openWhatsApp } from '@/lib/whatsapp';
 import { useI18n } from '@/lib/i18n';
 import { useSettings } from '@/lib/settings-context';
 import ProductLogo from '@/components/ProductLogo';
+import ProductReviews from '@/components/ProductReviews';
 import { getProductFeatureData, getProductAccentColor } from '@/lib/product-features';
 
 const DARK_D = {
@@ -33,7 +38,53 @@ const LIGHT_D = {
   red: '#7f1d1d', redBg: 'rgba(220,38,38,0.08)', yellow: '#78350f',
 };
 
+import { getRecentlyViewed, RecentProduct } from '@/lib/recently-viewed';
+
 type RelatedProduct = { id: string; name: string; nameAr?: string; slug: string; images: string[]; lowestPrice: number | null };
+
+function RecentlyViewedSection({ currentId, isAr, D, sym, cvt }: {
+  currentId: string; isAr: boolean;
+  D: Record<string, string>;
+  sym: string;
+  cvt: (n: number) => number;
+}) {
+  const [items, setItems] = useState<RecentProduct[]>([]);
+  useEffect(() => {
+    setItems(getRecentlyViewed().filter(p => p.id !== currentId));
+  }, [currentId]);
+
+  if (items.length === 0) return null;
+
+  return (
+    <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: `1px solid ${D.border}` }}>
+      <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#a78bfa', marginBottom: '1.25rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+        {isAr ? 'شاهدته مؤخراً' : 'Recently Viewed'}
+      </h2>
+      <div style={{ display: 'flex', gap: '0.875rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+        {items.map(item => {
+          const price = item.price ? cvt(item.price) : null;
+          return (
+            <Link key={item.id} href={`/product/${item.slug}`} style={{ textDecoration: 'none', flexShrink: 0 }}>
+              <div style={{ background: D.surface, border: `1px solid ${D.border}`, borderRadius: 14, padding: '1rem', width: 150, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.625rem', textAlign: 'center' }}>
+                <div style={{ width: 52, height: 52, borderRadius: '22%', overflow: 'hidden', background: `${item.accentColor || '#a78bfa'}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ProductLogo productName={item.name} dbImage={item.image} size={40} bg="transparent" lazy />
+                </div>
+                <p style={{ fontSize: '0.78rem', fontWeight: 700, color: D.text, margin: 0, lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>
+                  {isAr && item.nameAr ? item.nameAr : item.name}
+                </p>
+                {price && price > 0 && (
+                  <p style={{ fontSize: '0.72rem', color: item.accentColor || '#a78bfa', fontWeight: 700, margin: 0 }}>
+                    {isAr ? 'من ' : 'from '}{price} {sym}
+                  </p>
+                )}
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function ProductPageClient({ product, relatedProducts = [] }: { product: Product; relatedProducts?: RelatedProduct[] }) {
   const router = useRouter();
@@ -42,6 +93,20 @@ export default function ProductPageClient({ product, relatedProducts = [] }: { p
   useEffect(() => { setMounted(true); }, []);
   const D = mounted && resolvedTheme === 'light' ? LIGHT_D : DARK_D;
   const { addItem } = useCart();
+  const { toggle: wishToggle, isWished } = useWishlist();
+  const wished = isWished(product.id);
+
+  // Track this product as recently viewed + fire ViewContent pixel event
+  useEffect(() => {
+    const lowestPrice = product.variants?.filter(v => v.isActive && v.price > 0).map(v => v.price).sort((a, b) => a - b)[0];
+    trackProductView({
+      id: product.id, name: product.name, nameAr: product.nameAr,
+      slug: product.slug, image: product.images?.[0],
+      price: lowestPrice, accentColor: _getAccent(product.name),
+    });
+    pixel.viewContent(product.name, product.id, lowestPrice, 'EGP');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id]);
 
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     () => product.variants?.find((v) => !v.outOfStock) || product.variants?.[0] || null
@@ -56,6 +121,8 @@ export default function ProductPageClient({ product, relatedProducts = [] }: { p
   const [couponCode, setCouponCode] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
+  const [suggestedCoupon, setSuggestedCoupon] = useState<{ code: string; discount: number; isPercent: boolean } | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<{
     code: string; discount: number; isPercent: boolean; discountAmount: number;
   } | null>(null);
@@ -93,6 +160,40 @@ export default function ProductPageClient({ product, relatedProducts = [] }: { p
     }
   }, [currentPrice, quantity]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Fetch suggested coupon once on mount
+  useEffect(() => {
+    fetch('/api/public/coupons/banner').then(r => r.json()).then(d => {
+      if (d.coupon?.code) setSuggestedCoupon(d.coupon);
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try { await navigator.share({ title: product.name, url }); return; } catch {}
+    }
+    navigator.clipboard.writeText(url).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    });
+  };
+
+  const applyCouponCode = async (code: string) => {
+    setCouponCode(code); setCouponError('');
+    setCouponLoading(true);
+    try {
+      const res = await fetch('/api/coupons/validate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, orderTotal: subtotal }),
+      });
+      const data = await res.json();
+      if (!res.ok) setCouponError(data.error || 'Invalid coupon');
+      else { setAppliedCoupon({ code: data.coupon.code, discount: data.coupon.discount, isPercent: data.coupon.isPercent, discountAmount: data.discountAmount }); setCouponCode(''); setSuggestedCoupon(null); }
+    } catch { setCouponError('Failed to validate coupon'); }
+    setCouponLoading(false);
+  };
+
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
     setCouponLoading(true); setCouponError('');
@@ -113,6 +214,7 @@ export default function ProductPageClient({ product, relatedProducts = [] }: { p
   const handleAddToCart = () => {
     if (!selectedVariant) return;
     addItem({ productId: product.id, productName: product.name, productSlug: product.slug, productImage: product.images?.[0] || '', variantId: selectedVariant.id, variantTitle: selectedVariant.title, duration: selectedVariant.duration, price: selectedVariant.price, quantity });
+    pixel.addToCart(product.name, product.id, selectedVariant.price * quantity, 'EGP');
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
   };
@@ -120,6 +222,8 @@ export default function ProductPageClient({ product, relatedProducts = [] }: { p
   const handleWhatsAppOrder = async () => {
     if (!selectedVariant) return;
     if (!customerName || !customerPhone) { setShowOrderForm(true); return; }
+
+    pixel.initiateCheckout(finalPrice, 'EGP', quantity);
 
     try {
       const res = await fetch('/api/orders', {
@@ -172,6 +276,13 @@ export default function ProductPageClient({ product, relatedProducts = [] }: { p
         locale,
       });
 
+      const nameParts = customerName.trim().split(/\s+/);
+      pixel.lead(product.name, trustedTotal, 'EGP', orderCode, {
+        email: customerEmail.trim() || undefined,
+        phone: customerPhone,
+        firstName: nameParts[0],
+        lastName: nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined,
+      });
       openWhatsApp(generateWhatsAppUrl(whatsappPhone, message));
       setTimeout(() => router.push(`/thank-you?code=${orderCode}`), 500);
 
@@ -237,6 +348,25 @@ export default function ProductPageClient({ product, relatedProducts = [] }: { p
                 }} />
 
                 <div style={{ padding: '2rem', position: 'relative' }}>
+                  {/* Wishlist + Share buttons */}
+                  <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', display: 'flex', gap: '0.4rem', zIndex: 1 }}>
+                    <button
+                      onClick={handleShare}
+                      style={{ background: 'rgba(128,128,128,0.08)', border: '1px solid rgba(128,128,128,0.15)', borderRadius: 10, padding: '0.45rem 0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', color: shareCopied ? '#22c55e' : D.textMuted, fontSize: '0.75rem', fontWeight: 600, fontFamily: 'inherit', transition: 'all 0.2s' }}
+                      title={isAr ? 'مشاركة' : 'Share'}
+                    >
+                      {shareCopied ? <Copy style={{ width: 14, height: 14 }} /> : <Share2 style={{ width: 14, height: 14 }} />}
+                      {shareCopied ? (isAr ? 'تم النسخ' : 'Copied!') : (isAr ? 'مشاركة' : 'Share')}
+                    </button>
+                    <button
+                      onClick={() => wishToggle({ id: product.id, name: product.name, nameAr: product.nameAr, slug: product.slug, image: product.images?.[0], price: product.variants?.filter(v => v.isActive && v.price > 0).map(v => v.price).sort((a, b) => a - b)[0], accentColor })}
+                      style={{ background: wished ? 'rgba(239,68,68,0.12)' : 'rgba(128,128,128,0.08)', border: `1px solid ${wished ? 'rgba(239,68,68,0.3)' : 'rgba(128,128,128,0.15)'}`, borderRadius: 10, padding: '0.45rem 0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', color: wished ? '#f87171' : D.textMuted, fontSize: '0.75rem', fontWeight: 600, fontFamily: 'inherit', transition: 'all 0.2s' }}
+                      title={wished ? (isAr ? 'إزالة من المفضلة' : 'Remove from wishlist') : (isAr ? 'إضافة للمفضلة' : 'Add to wishlist')}
+                    >
+                      <Heart style={{ width: 14, height: 14, fill: wished ? '#f87171' : 'none', transition: 'all 0.2s' }} />
+                      {wished ? (isAr ? 'محفوظ' : 'Saved') : (isAr ? 'احفظ' : 'Save')}
+                    </button>
+                  </div>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem', marginBottom: '1.5rem' }}>
                     <div style={{
                       width: 96, height: 96, borderRadius: '22%', overflow: 'hidden', flexShrink: 0,
@@ -503,6 +633,16 @@ export default function ProductPageClient({ product, relatedProducts = [] }: { p
                       </button>
                     </div>
                     {couponError && <p style={{ fontSize: '0.75rem', color: D.red, marginTop: '0.375rem' }}>{couponError}</p>}
+                    {suggestedCoupon && !couponError && (
+                      <button
+                        onClick={() => applyCouponCode(suggestedCoupon.code)}
+                        disabled={couponLoading}
+                        style={{ marginTop: '0.4rem', width: '100%', padding: '0.45rem 0.75rem', borderRadius: 8, background: `${accentColor}12`, border: `1px dashed ${accentColor}50`, color: accentColor, fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center' }}
+                      >
+                        <Tag style={{ width: 12, height: 12 }} />
+                        {isAr ? 'استخدم كود' : 'Apply code'} <strong>{suggestedCoupon.code}</strong> — {suggestedCoupon.isPercent ? `${suggestedCoupon.discount}%` : `${suggestedCoupon.discount} ${sym}`} {isAr ? 'خصم' : 'off'}
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -623,6 +763,12 @@ export default function ProductPageClient({ product, relatedProducts = [] }: { p
             }
           `}</style>
         </div>
+
+        {/* ── Reviews ── */}
+        <ProductReviews productId={product.id} />
+
+        {/* ── Recently Viewed ── */}
+        <RecentlyViewedSection currentId={product.id} isAr={isAr} D={D} sym={sym} cvt={cvt} />
 
         {/* ── Related Products ── */}
         {relatedProducts.length > 0 && (

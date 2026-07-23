@@ -42,6 +42,22 @@ const quickBtnStyle: Record<string, string> = {
 export default function AdminOrdersPage() {
     const [orders, setOrders]                   = useState<OrderData[]>([]);
     const [loading, setLoading]                 = useState(true);
+
+    const stats = (() => {
+        const now   = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const week  = new Date(today); week.setDate(today.getDate() - 7);
+        const month = new Date(now.getFullYear(), now.getMonth(), 1);
+        const completed = orders.filter(o => o.status !== 'Cancelled');
+        const sum = (arr: OrderData[]) => arr.reduce((s, o) => s + o.totalPrice, 0);
+        return {
+            todayRev:  sum(completed.filter(o => new Date(o.createdAt) >= today)),
+            weekRev:   sum(completed.filter(o => new Date(o.createdAt) >= week)),
+            monthRev:  sum(completed.filter(o => new Date(o.createdAt) >= month)),
+            todayCount:  completed.filter(o => new Date(o.createdAt) >= today).length,
+            pendingCount: orders.filter(o => o.status === 'New').length,
+        };
+    })();
     const [filterStatus, setFilterStatus]       = useState('');
     const [search, setSearch]                   = useState('');
     const [copiedCode, setCopiedCode]           = useState<string | null>(null);
@@ -51,6 +67,7 @@ export default function AdminOrdersPage() {
     const [dateTo, setDateTo]                   = useState('');
     const [deleteTarget, setDeleteTarget]       = useState<OrderData | null>(null);
     const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+    const [historyPhone, setHistoryPhone]       = useState<string | null>(null);
     const { currencySymbol, currency }          = useSettings();
     const { toast, showToast, closeToast }      = useAdminToast();
 
@@ -171,6 +188,48 @@ export default function AdminOrdersPage() {
         <div className="space-y-6">
             <AdminToast toast={toast} onClose={closeToast} />
 
+            {/* Customer History Modal */}
+            {historyPhone && (() => {
+                const hOrders = orders.filter(o => o.customerPhone === historyPhone);
+                const hName   = hOrders[0]?.customerName || historyPhone;
+                const hTotal  = hOrders.filter(o => o.status !== 'Cancelled').reduce((s, o) => s + o.totalPrice, 0);
+                return (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backdropFilter: 'blur(4px)' }}>
+                        <div style={{ background: '#141928', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '1.5rem', width: '100%', maxWidth: 560, maxHeight: '80vh', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div>
+                                    <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#E8E8E8', margin: 0 }}>{hName}</h3>
+                                    <p style={{ fontSize: '0.75rem', color: '#7a7a7a', margin: '2px 0 0', fontFamily: 'monospace' }}>{historyPhone}</p>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <p style={{ fontSize: '0.7rem', color: '#7a7a7a', margin: 0 }}>{hOrders.length} orders · total</p>
+                                        <p style={{ fontSize: '1rem', fontWeight: 800, color: '#a78bfa', margin: 0 }}>{hTotal.toFixed(0)} {currencySymbol}</p>
+                                    </div>
+                                    <button onClick={() => setHistoryPhone(null)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '0.4rem', cursor: 'pointer', color: '#9a9a9a', display: 'flex' }}>
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                {hOrders.map(o => (
+                                    <div key={o.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+                                        <div>
+                                            <p style={{ fontSize: '0.8rem', fontWeight: 700, color: '#E8E8E8', fontFamily: 'monospace', margin: 0 }}>{o.orderCode}</p>
+                                            <p style={{ fontSize: '0.7rem', color: '#7a7a7a', margin: '2px 0 0' }}>{formatDateTime(o.createdAt)}</p>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#E8E8E8' }}>{o.totalPrice.toFixed(0)} {currencySymbol}</span>
+                                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusColors[o.status] || ''}`}>{o.status}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
             {deleteTarget && (
                 <AdminDeleteModal
                     title="Delete Order"
@@ -188,6 +247,24 @@ export default function AdminOrdersPage() {
                     onCancel={() => setShowDeleteAllModal(false)}
                     confirmLabel="Delete All"
                 />
+            )}
+
+            {/* Stats bar */}
+            {!loading && orders.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '0.75rem' }}>
+                    {[
+                        { label: "Today's orders", value: stats.todayCount, sub: `${stats.todayRev.toFixed(0)} ${currencySymbol}`, color: '#a78bfa' },
+                        { label: 'This week',       value: `${stats.weekRev.toFixed(0)} ${currencySymbol}`, sub: 'revenue', color: '#34d399' },
+                        { label: 'This month',      value: `${stats.monthRev.toFixed(0)} ${currencySymbol}`, sub: 'revenue', color: '#38bdf8' },
+                        { label: 'Pending (New)',   value: stats.pendingCount, sub: 'awaiting action', color: '#fb923c' },
+                    ].map(s => (
+                        <div key={s.label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '0.875rem 1rem' }}>
+                            <p style={{ fontSize: '0.72rem', color: '#666', marginBottom: 4 }}>{s.label}</p>
+                            <p style={{ fontSize: '1.25rem', fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</p>
+                            <p style={{ fontSize: '0.7rem', color: '#555', marginTop: 3 }}>{s.sub}</p>
+                        </div>
+                    ))}
+                </div>
             )}
 
             {/* Header */}
@@ -289,7 +366,13 @@ export default function AdminOrdersPage() {
                                             <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{order.customerName}</p>
                                             <div className="flex items-center gap-1.5 mt-0.5">
                                                 <Phone className="w-3 h-3 text-gray-400 shrink-0" />
-                                                <p className="text-xs font-mono text-gray-500 dark:text-gray-400 select-all">{order.customerPhone}</p>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setHistoryPhone(order.customerPhone); }}
+                                                    className="text-xs font-mono text-gray-500 dark:text-gray-400 hover:text-violet-400 dark:hover:text-violet-400 transition underline-offset-2 hover:underline"
+                                                    title="View order history for this customer"
+                                                >
+                                                    {order.customerPhone}
+                                                </button>
                                             </div>
                                             {order.customerEmail && (
                                                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">{order.customerEmail}</p>

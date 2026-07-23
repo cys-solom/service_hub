@@ -8,7 +8,8 @@ import { useCart } from '@/lib/cart-context';
 import { useI18n } from '@/lib/i18n';
 import { useSettings } from '@/lib/settings-context';
 import AnimatedLogo from '@/components/AnimatedLogo';
-import { ShoppingCart, Sun, Moon, Globe, Home, Package, Phone } from 'lucide-react';
+import { ShoppingCart, Sun, Moon, Globe, Home, Package, Phone, Heart } from 'lucide-react';
+import { useWishlist } from '@/lib/wishlist-context';
 
 const DARK_C = {
   bgNav: 'rgba(6,7,10,0.88)', border: 'rgba(255,255,255,0.08)',
@@ -31,6 +32,7 @@ export default function Navbar() {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const C = mounted && resolvedTheme === 'light' ? LIGHT_C : DARK_C;
   const { itemCount } = useCart();
+  const { count: wishCount } = useWishlist();
   const { t, locale, setLocale } = useI18n();
   const { displaySymbol, toggleDisplayCurrency, canSwitchCurrency, displayCurrency } = useSettings();
   const pathname = usePathname();
@@ -125,6 +127,23 @@ export default function Navbar() {
                   ? (theme === 'dark' ? <Sun style={{ width: 19, height: 19 }} /> : <Moon style={{ width: 19, height: 19 }} />)
                   : <div style={{ width: 19, height: 19 }} />}
               </button>
+
+              {/* Wishlist */}
+              <Link href="/wishlist" style={{ ...iconBtn, position: 'relative', textDecoration: 'none' }} aria-label="Wishlist">
+                <Heart style={{ width: 19, height: 19 }} />
+                {mounted && wishCount > 0 && (
+                  <span style={{
+                    position: 'absolute', top: 4, right: 4,
+                    width: 16, height: 16,
+                    background: '#ef4444',
+                    color: '#fff', fontSize: '0.6rem', borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 700, lineHeight: 1,
+                  }}>
+                    {wishCount > 9 ? '9+' : wishCount}
+                  </span>
+                )}
+              </Link>
 
               {/* Cart — visible on all sizes */}
               <Link href="/cart" style={{ ...iconBtn, position: 'relative', textDecoration: 'none' }} aria-label="Cart">
