@@ -7,6 +7,7 @@ import { useSettings } from '@/lib/settings-context';
 import { adminFetch, adminJsonFetch } from '@/lib/admin-fetch';
 import { AdminToast, useAdminToast } from '@/components/admin/AdminToast';
 import { AdminDeleteModal } from '@/components/admin/AdminDeleteModal';
+import { getTestEventCode } from '@/lib/pixel';
 
 interface OrderData {
     id: string;
@@ -116,10 +117,10 @@ export default function AdminOrdersPage() {
     const handleStatusChange = async (orderId: string, newStatus: string) => {
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
         try {
-            // Temporary testing hook: visit this page with ?fbtest=TEST_CODE to make the
-            // Purchase event (fired when a status changes to Completed) show up in Meta's
-            // Test Events tool. Absent during normal admin use.
-            const testEventCode = new URLSearchParams(window.location.search).get('fbtest') || undefined;
+            // Testing hook: visit any page once with ?fbtest=TEST_CODE (it "sticks" for the
+            // session) to make the Purchase event fired here show up in Meta's Test Events
+            // tool. Absent during normal admin use.
+            const testEventCode = getTestEventCode();
             const res = await adminJsonFetch(`/api/orders/${orderId}`, { method: 'PUT', body: JSON.stringify({ status: newStatus, testEventCode }) });
             if (!res.ok) throw new Error('Failed');
             showToast('success', `Status → ${newStatus}`);

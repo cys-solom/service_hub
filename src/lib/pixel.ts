@@ -23,6 +23,23 @@ function generateEventId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+/**
+ * Testing hook: visit any page once with ?fbtest=TEST_CODE and it "sticks" for
+ * the rest of the browser tab session (sessionStorage), surviving client-side
+ * navigation that would otherwise drop the query string. Tags every CAPI event
+ * with Meta's test_event_code so it shows up in Events Manager's Test Events
+ * tool. Clear it by closing the tab or running sessionStorage.removeItem('fbtest').
+ */
+export function getTestEventCode(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const fromUrl = new URLSearchParams(window.location.search).get('fbtest');
+  if (fromUrl) {
+    try { sessionStorage.setItem('fbtest', fromUrl); } catch { /* ignore */ }
+    return fromUrl;
+  }
+  try { return sessionStorage.getItem('fbtest') || undefined; } catch { return undefined; }
+}
+
 function fbEvent(name: string, params: Record<string, unknown> | undefined, eventId: string) {
   if (typeof window === 'undefined' || !window.fbq) return;
   window.fbq('track', name, params, { eventID: eventId });
@@ -31,9 +48,7 @@ function fbEvent(name: string, params: Record<string, unknown> | undefined, even
 /** Mirror the same event to Meta's Conversions API (server-side), for deduplication + better match quality. */
 function sendCapi(eventName: string, eventId: string, customData?: Record<string, unknown>, userData?: PixelUserData) {
   if (typeof window === 'undefined') return;
-  // Temporary testing hook: visit the site with ?fbtest=TEST_CODE to make CAPI
-  // events show up in Meta's "Test Events" tool. Absent for normal visitors.
-  const testEventCode = new URLSearchParams(window.location.search).get('fbtest') || undefined;
+  const testEventCode = getTestEventCode();
   fetch('/api/meta-capi', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
