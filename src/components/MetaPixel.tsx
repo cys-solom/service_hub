@@ -10,6 +10,7 @@ function PageViewTracker() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
+    if (pathname.startsWith('/admin')) return;
     pixel.pageView();
   }, [pathname, searchParams]);
 
@@ -18,12 +19,20 @@ function PageViewTracker() {
 
 export default function MetaPixel() {
   const { metaPixelId, settingsLoaded } = useSettings();
+  const pathname = usePathname();
+  const isAdmin = pathname.startsWith('/admin');
 
   useEffect(() => {
-    if (settingsLoaded && metaPixelId) {
+    // Never load the Pixel script on admin pages — it would track the store
+    // owner's own dashboard clicks (status changes, edits, etc.) as if they
+    // were customer behavior, and Meta's automatic button-click detection
+    // would fire on every admin UI button.
+    if (settingsLoaded && metaPixelId && !isAdmin) {
       initPixel(metaPixelId);
     }
-  }, [settingsLoaded, metaPixelId]);
+  }, [settingsLoaded, metaPixelId, isAdmin]);
+
+  if (isAdmin) return null;
 
   return (
     <Suspense fallback={null}>
