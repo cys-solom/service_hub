@@ -11,6 +11,7 @@ import { useSettings } from '@/lib/settings-context';
 import { useTheme } from 'next-themes';
 import ProductLogo from '@/components/ProductLogo';
 import { getProductAccentColor } from '@/lib/product-features';
+import { pixel } from '@/lib/pixel';
 
 const DARK_C = {
     bg: '#0d0d0d', bgLight: '#101010', surface: '#141414',
@@ -92,6 +93,7 @@ export default function CartPage() {
         if (badQty) { setFormError(isAr ? 'الكمية يجب أن تكون بين 1 و 20.' : 'Quantity must be between 1 and 20.'); return; }
 
         setSending(true);
+        pixel.initiateCheckout(finalPrice, currency || 'EGP', items.reduce((s, i) => s + i.quantity, 0));
         try {
             const res = await fetch('/api/orders', {
                 method: 'POST',
@@ -129,6 +131,18 @@ export default function CartPage() {
                 currency: currency || 'EGP',
                 locale,
             });
+            const nameParts = trimmedName.split(/\s+/);
+            pixel.lead(
+                items.length === 1 ? items[0].productName : `Cart (${items.length} items)`,
+                typeof data.total === 'number' ? data.total : finalPrice,
+                currency || 'EGP',
+                data.orderCode,
+                {
+                    phone: trimmedPhone,
+                    firstName: nameParts[0],
+                    lastName: nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined,
+                }
+            );
             openWhatsApp(generateWhatsAppUrl(whatsappPhone || '', message));
             clearCart();
             setTimeout(() => router.push(`/thank-you?code=${data.orderCode}&waUrl=${encodeURIComponent(generateWhatsAppUrl(whatsappPhone || '', message))}`), 500);

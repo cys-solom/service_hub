@@ -12,6 +12,7 @@ import { useI18n } from '@/lib/i18n';
 import { useSettings } from '@/lib/settings-context';
 import { Product, ProductVariant } from '@/lib/types';
 import { getProductFeatureData, getProductPriority, getProductAccentColor } from '@/lib/product-features';
+import { pixel } from '@/lib/pixel';
 
 const DARK_C = {
   text: '#E8E8E8', textSec: '#9a9a9a', textMuted: '#7a7a7a',
@@ -336,6 +337,7 @@ export default function ProductsPageClient({ products }: { products: Product[] }
       variantId: variant.id, variantTitle: variant.title,
       duration: variant.duration, price: variant.price, quantity: 1,
     });
+    pixel.addToCart(product.name, product.id, variant.price, 'EGP');
     setAddedId(product.id);
     window.setTimeout(() => setAddedId(null), 1600);
   }, [addItem]);
